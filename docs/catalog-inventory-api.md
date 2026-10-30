@@ -23,7 +23,7 @@ Base path: `/api/v1/`. Authenticated requests use the bearer access token return
 
 ## Current scope and rollout cautions
 
-This is the first catalog/inventory API slice, not a complete inventory ledger or billing implementation. The balance table is maintained transactionally alongside each adjustment, but a reconciliation job and concurrency-focused integration tests are still needed. Stock movements from sales, purchase receipts, returns, negative-stock policy, unit conversions, batches/expiry, and branch-level role permissions are not implemented yet. Product create and inventory adjustments are currently available to any active member; role-based write permissions must be added before production use.
+This is the first catalog/inventory API slice, not a complete inventory ledger or billing implementation. The balance table is maintained transactionally alongside each adjustment, but a reconciliation job and concurrency-focused integration tests are still needed. Stock movements from sales, purchase receipts, returns, negative-stock policy, unit conversions, batches/expiry, and branch-level role permissions are not implemented yet. Product creation and stock adjustments are restricted to owner, admin, and manager memberships. Cashier memberships are read-only for these endpoints; finer-grained permissions remain future work.
 
 Run backend tests with:
 
