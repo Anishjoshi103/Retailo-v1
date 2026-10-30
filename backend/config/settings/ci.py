@@ -9,3 +9,7 @@ DATABASES = {  # noqa: F405
     }
 }
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+DEFAULT_FROM_EMAIL = "test@retailo.invalid"
+FRONTEND_BASE_URL = "https://retailo.example.test"
+IS_TEST_ENV = True
