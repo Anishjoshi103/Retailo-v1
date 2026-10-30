@@ -39,4 +39,12 @@ class ProductListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         tenant_id = active_tenant_membership(self.request)
+        membership_id = self.request.auth.get("membership_id")
+        membership = Membership.objects.filter(
+            pk=membership_id, tenant_id=tenant_id, user=self.request.user, is_active=True
+        ).first()
+        if membership is None or membership.role not in {
+            Membership.Role.OWNER, Membership.Role.ADMIN, Membership.Role.MANAGER
+        }:
+            raise PermissionDenied("Store manager permissions are required to create products.")
         serializer.save(tenant_id=tenant_id)
