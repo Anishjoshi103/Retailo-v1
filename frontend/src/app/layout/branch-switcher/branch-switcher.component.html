@@ -1,0 +1,8 @@
+<label class="branch-switcher">
+  <span class="branch-switcher__label">Branch</span>
+  <select aria-label="Select branch" [value]="selectedBranchId" (change)="onBranchSelect($event)">
+    @for (branch of branches; track branch.id) {
+      <option [value]="branch.id">{{ branch.name }}</option>
+    }
+  </select>
+</label>
