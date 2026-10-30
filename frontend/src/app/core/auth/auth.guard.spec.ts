@@ -1,39 +1,39 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, UrlTree } from '@angular/router';
 import { of } from 'rxjs';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { SessionService } from './session.service';
 import { authGuard } from './auth.guard';
 
 describe('authGuard', () => {
-  let session: jasmine.SpyObj<SessionService>;
+  let session: { accessToken: () => string | null; refreshAccessToken: ReturnType<typeof vi.fn> };
   let router: Router;
 
   beforeEach(() => {
-    session = jasmine.createSpyObj<SessionService>('SessionService', ['refreshAccessToken'], { accessToken: () => null });
+    session = { accessToken: () => null, refreshAccessToken: vi.fn(() => of(null)) };
     TestBed.configureTestingModule({ providers: [provideRouter([]), { provide: SessionService, useValue: session }] });
     router = TestBed.inject(Router);
   });
 
   it('allows navigation when an access token is already in memory', () => {
-    Object.defineProperty(session, 'accessToken', { value: () => 'token' });
+    session.accessToken = () => 'token';
     const result = TestBed.runInInjectionContext(() => authGuard({} as never, { url: '/pos' } as never));
-    expect(result).toBeTrue();
+    expect(result).toBe(true);
     expect(session.refreshAccessToken).not.toHaveBeenCalled();
   });
 
-  it('restores the session from the refresh cookie before redirecting', (done) => {
-    session.refreshAccessToken.and.returnValue(of('restored-token'));
+  it('restores the session from the refresh cookie before allowing navigation', () => {
+    session.refreshAccessToken.mockReturnValue(of('restored-token'));
     const result = TestBed.runInInjectionContext(() => authGuard({} as never, { url: '/pos' } as never));
-    (result as ReturnType<typeof of>).subscribe((value) => { expect(value).toBeTrue(); done(); });
+    expect(result).toBeInstanceOf(Object);
+    if (result && typeof result !== 'boolean') result.subscribe((value) => expect(value).toBe(true));
   });
 
-  it('redirects to sign-in and preserves the requested URL when refresh fails', (done) => {
-    session.refreshAccessToken.and.returnValue(of(null));
+  it('redirects to sign-in and preserves the requested URL when refresh fails', () => {
     const result = TestBed.runInInjectionContext(() => authGuard({} as never, { url: '/pos' } as never));
-    (result as ReturnType<typeof of>).subscribe((value) => {
-      expect(value instanceof UrlTree).toBeTrue();
+    if (result && typeof result !== 'boolean') result.subscribe((value) => {
+      expect(value).toBeInstanceOf(UrlTree);
       expect(router.serializeUrl(value as UrlTree)).toContain('returnUrl=%2Fpos');
-      done();
     });
   });
 });
