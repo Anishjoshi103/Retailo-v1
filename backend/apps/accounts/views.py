@@ -1,3 +1,4 @@
+import logging
 import uuid
 from smtplib import SMTPException
 from urllib.parse import urlencode
@@ -19,6 +20,8 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.tenancy.models import Branch, Membership, Tenant
+
+logger = logging.getLogger(__name__)
 
 REFRESH_COOKIE = "retailo_refresh"
 EMAIL_VERIFICATION_SALT = "retailo.accounts.email-verification.v1"
@@ -95,7 +98,8 @@ class RegisterView(APIView):
                     recipient=email,
                 )
         except (ValueError, RuntimeError, OSError, SMTPException):
-            return Response({"detail": "Registration could not be completed right now. Please try again later."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            logger.exception("Registration setup or verification email delivery failed")
+            return Response({"detail": "If this address can be registered, verification instructions will be sent."}, status=status.HTTP_202_ACCEPTED)
         return Response({"detail": "If this address can be registered, verification instructions will be sent."}, status=status.HTTP_202_ACCEPTED)
 
 
@@ -132,8 +136,8 @@ class PasswordResetRequestView(APIView):
                     message=f"Reset your Retailo password by opening this link. The link becomes invalid after your password changes.\n\n{reset_url}\n\nIf you did not request this, ignore this email.",
                     recipient=user.email,
                 )
-            except (RuntimeError, ValueError):
-                return Response({"detail": "Password recovery is temporarily unavailable."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            except (RuntimeError, ValueError, OSError, SMTPException):
+                logger.exception("Password reset email delivery failed")
         return Response({"detail": "If an active account matches this address, password reset instructions will be sent."}, status=status.HTTP_202_ACCEPTED)
 
 
