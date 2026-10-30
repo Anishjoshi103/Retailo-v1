@@ -46,6 +46,6 @@ export class SessionService {
   clearSession(): void { this.setAccessToken(null); }
 
   private authUrl(endpoint: string): string {
-    return `${this.config.apiBaseUrl.replace(/\\/$/, '')}/auth/${endpoint}`;
+    return `${this.config.apiBaseUrl.replace(/\/$/, '')}/auth/${endpoint}`;
   }
 }
