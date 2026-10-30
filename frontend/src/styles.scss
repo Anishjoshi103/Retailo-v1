@@ -1,4 +1,6 @@
-@use './styles/tokens';
+@use './styles/tokens' as tokens;
+
+@include tokens.css-custom-properties;
 
 :root {
   font-family: var(--font-family-base);
@@ -7,38 +9,11 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html {
-  min-width: 20rem;
-  min-height: 100%;
-}
-
-body {
-  margin: var(--space-0);
-  min-width: 20rem;
-  min-height: 100vh;
-  color: var(--color-text);
-  background: var(--color-canvas);
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
+*, *::before, *::after { box-sizing: border-box; }
+html { min-width: 20rem; min-height: 100%; }
+body { margin: var(--space-0); min-width: 20rem; min-height: 100vh; color: var(--color-text); background: var(--color-canvas); }
+button, input, select, textarea { font: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline: var(--space-1) solid var(--color-focus);
   outline-offset: var(--space-1);
 }
