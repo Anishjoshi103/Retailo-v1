@@ -1,9 +1,6 @@
-from django.test import SimpleTestCase, override_settings
-from django.urls import reverse
-
+from django.test import SimpleTestCase
 
 class HealthEndpointTests(SimpleTestCase):
-    @override_settings(ROOT_URLCONF="config.urls")
     def test_health_returns_ok_without_database(self):
         from django.test import Client
 
@@ -20,6 +17,6 @@ class HealthEndpointTests(SimpleTestCase):
     def test_invalid_correlation_id_is_replaced(self):
         from django.test import Client
 
-        response = Client().get("/api/v1/health", HTTP_X_REQUEST_ID="bad\nheader")
-        self.assertNotEqual(response["X-Request-ID"], "bad\nheader")
+        response = Client().get("/api/v1/health", HTTP_X_REQUEST_ID="bad\\nheader")
+        self.assertNotEqual(response["X-Request-ID"], "bad\\nheader")
         self.assertTrue(response["X-Request-ID"])
