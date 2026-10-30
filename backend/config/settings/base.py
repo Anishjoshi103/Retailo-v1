@@ -15,6 +15,8 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "apps.tenancy",
+    "apps.accounts",
+    "rest_framework_simplejwt.token_blacklist",
     "rest_framework",
     "drf_spectacular",
 ]
@@ -45,9 +47,22 @@ DATABASES = {
 }
 
 REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "config.api_errors.api_exception_handler",
 }
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": __import__("datetime").timedelta(minutes=5),
+    "REFRESH_TOKEN_LIFETIME": __import__("datetime").timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+}
+AUTH_REFRESH_COOKIE_SAMESITE = "Lax"
 SPECTACULAR_SETTINGS = {
     "TITLE": "Retailo API",
     "DESCRIPTION": "Versioned API for the Retailo retail POS and inventory platform.",

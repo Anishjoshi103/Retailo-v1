@@ -3,3 +3,4 @@ djangorestframework>=3.16,<3.17
 mssql-django>=1.6,<1.7
 gunicorn>=23,<24
 drf-spectacular>=0.28,<0.29
+djangorestframework-simplejwt[crypto]>=5.5,<6
