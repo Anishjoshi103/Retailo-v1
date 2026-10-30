@@ -1,0 +1,13 @@
+<main class="auth-page"><section class="auth-card" aria-labelledby="register-title"><a class="brand" routerLink="/" aria-label="Retailo home"><span class="brand-mark">R</span><span>Retailo</span></a><h1 id="register-title">Set up your store</h1><p class="intro">Create a Retailo workspace for your business.</p>
+@if(errorMessage()){<p class="form-error" role="alert">{{errorMessage()}}</p>}@if(successMessage()){<p class="form-success" role="status">{{successMessage()}}</p>}
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+<label for="store-name">Store or business name</label><input id="store-name" formControlName="storeName" autocomplete="organization" [attr.aria-invalid]="form.controls.storeName.touched&&form.controls.storeName.invalid">
+@if(form.controls.storeName.touched&&form.controls.storeName.invalid){<small class="field-error">Enter a business name (up to 120 characters).</small>}
+<label for="register-email">Work email</label><input id="register-email" type="email" formControlName="email" autocomplete="email" inputmode="email" [attr.aria-invalid]="form.controls.email.touched&&form.controls.email.invalid">
+@if(form.controls.email.touched&&form.controls.email.invalid){<small class="field-error">Enter a valid email address.</small>}
+<label for="register-password">Password</label><input id="register-password" type="password" formControlName="password" autocomplete="new-password" [attr.aria-invalid]="form.controls.password.touched&&form.controls.password.invalid">
+@if(form.controls.password.touched&&form.controls.password.invalid){<small class="field-error">Use at least 12 characters.</small>}
+<label for="confirm-password">Confirm password</label><input id="confirm-password" type="password" formControlName="confirmPassword" autocomplete="new-password" [attr.aria-invalid]="form.controls.confirmPassword.touched&&form.controls.confirmPassword.invalid">
+@if(form.controls.confirmPassword.touched&&form.controls.confirmPassword.invalid){<small class="field-error">Passwords must match.</small>}
+<button type="submit" [disabled]="submitting()">{{submitting()?'Submitting…':'Create workspace'}}</button>
+</form><p class="footer-link">Already have an account? <a routerLink="/auth/login">Sign in</a></p></section></main>
