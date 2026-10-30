@@ -1,0 +1,8 @@
+<div class="shell">
+  <retailo-topbar (menuToggle)="toggleDrawer()" />
+  <div class="shell__body">
+    <retailo-sidenav [drawerOpen]="drawerOpen()" (navigate)="closeDrawer()" />
+    @if (drawerOpen()) { <button class="shell__scrim" type="button" aria-label="Close navigation menu" (click)="closeDrawer()"></button> }
+    <main id="main-content" class="shell__content" tabindex="-1"><router-outlet /></main>
+  </div>
+</div>

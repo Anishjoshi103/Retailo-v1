@@ -1,0 +1,6 @@
+:host { display:block; min-height:100vh; }
+.shell { min-height:100vh; background:var(--color-canvas); color:var(--color-text); }
+.shell__body { display:flex; min-height:calc(100vh - var(--size-topbar-height)); }
+.shell__content { flex:1; min-width:0; padding:var(--space-7); }
+.shell__scrim { display:none; }
+@media (max-width:56.25rem) { .shell__content { padding:var(--space-4); } .shell__scrim { display:block; position:fixed; inset:var(--size-topbar-height) 0 0; z-index:10; border:0; background:var(--color-overlay); } }

@@ -1,0 +1,2 @@
+import { Routes } from '@angular/router';
+export const AUTH_ROUTES: Routes = [{ path: 'login', loadComponent: () => import('../placeholder/feature-placeholder.page').then((m) => m.FeaturePlaceholderPage), data: { title: 'Sign in', description: 'Authentication screens will be implemented in the dedicated auth task.' } }];

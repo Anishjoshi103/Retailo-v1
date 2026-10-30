@@ -1,0 +1,4 @@
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+@Component({ selector:'retailo-feature-placeholder', standalone:true, templateUrl:'./feature-placeholder.page.html', styleUrl:'./feature-placeholder.page.scss', changeDetection:ChangeDetectionStrategy.OnPush })
+export class FeaturePlaceholderPage { private readonly route=inject(ActivatedRoute); readonly title=(this.route.snapshot.data['title'] as string|undefined)??'Workspace'; readonly description=(this.route.snapshot.data['description'] as string|undefined)??'This feature will be available in a later implementation step.'; }

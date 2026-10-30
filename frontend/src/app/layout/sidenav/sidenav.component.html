@@ -1,0 +1,9 @@
+<nav id="primary-navigation" class="sidenav" [class.sidenav--open]="drawerOpen" aria-label="Primary navigation">
+  <p class="sidenav__label">WORKSPACE</p>
+  @for (item of visibleItems(); track item.route) {
+    <a class="nav-item" [routerLink]="item.route" routerLinkActive="nav-item--active" [routerLinkActiveOptions]="{exact:item.route === '/'}" (click)="navigate.emit()">
+      <span class="nav-item__icon" aria-hidden="true">{{item.icon}}</span><span>{{item.label}}</span>
+    </a>
+  }
+  <div class="sidenav__footer"><span class="status-dot" aria-hidden="true"></span><span>Sync is up to date</span></div>
+</nav>

@@ -1,9 +1,3 @@
-import { AppEnvironment } from '../app/core/config/app-environment.token';
-
-export const productionEnvironment: AppEnvironment = {
-  production: true,
-  environmentLabel: 'Production',
-  showEnvironmentLabel: false
-};
-
+import type { RetailoEnvironment } from './environment';
+export const productionEnvironment: RetailoEnvironment = { production: true, environmentLabel: 'Production', showEnvironmentLabel: false, apiBaseUrl: '/api/v1' };
 export const environment = productionEnvironment;
