@@ -1,11 +1,4 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-
-@Component({
-  selector: 'retailo-root',
-  standalone: true,
-  imports: [RouterOutlet],
-  template: '<router-outlet />',
-  changeDetection: ChangeDetectionStrategy.OnPush
-})
+@Component({ selector: 'retailo-root', standalone: true, imports: [RouterOutlet], templateUrl: './app.component.html', styleUrl: './app.component.scss', changeDetection: ChangeDetectionStrategy.OnPush })
 export class AppComponent {}

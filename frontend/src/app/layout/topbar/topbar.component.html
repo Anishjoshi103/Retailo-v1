@@ -1,0 +1,7 @@
+<header class="topbar">
+  <button class="topbar__menu" type="button" aria-label="Open navigation menu" aria-controls="primary-navigation" (click)="menuToggle.emit()">☰</button>
+  <a class="brand" routerLink="/" aria-label="Retailo home"><span class="brand__mark" aria-hidden="true">R</span><span>Retailo</span></a>
+  <div class="topbar__context"><retailo-branch-switcher /><span class="context-pill"><span class="context-pill__label">Register</span>Register 01</span></div>
+  <div class="topbar__status"><span class="status-dot" aria-hidden="true"></span><span>Online · Synced</span></div>
+  <button class="user-menu" type="button" aria-label="User menu">AJ <span class="user-menu__name">Account</span></button>
+</header>

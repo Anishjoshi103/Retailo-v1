@@ -1,27 +1,11 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "baseUrl": "./",
-    "outDir": "./dist/out-tsc",
-    "strict": true,
-    "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true,
-    "isolatedModules": true,
-    "experimentalDecorators": true,
-    "importHelpers": true,
-    "target": "ES2022",
-    "module": "preserve",
-    "moduleResolution": "bundler",
-    "lib": ["ES2022", "dom"],
-    "useDefineForClassFields": false
+    "baseUrl": "./", "outDir": "./dist/out-tsc", "strict": true, "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true, "noImplicitReturns": true, "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true, "isolatedModules": true, "experimentalDecorators": true, "importHelpers": true,
+    "target": "ES2022", "module": "preserve", "moduleResolution": "bundler", "lib": ["ES2022", "dom"],
+    "paths": { "@core/*": ["src/app/core/*"], "@shared/*": ["src/app/shared/*"], "@features/*": ["src/app/features/*"], "@layout/*": ["src/app/layout/*"] }
   },
-  "angularCompilerOptions": {
-    "enableI18nLegacyMessageIdFormat": false,
-    "strictInjectionParameters": true,
-    "strictInputAccessModifiers": true,
-    "strictTemplates": true
-  }
+  "angularCompilerOptions": { "enableI18nLegacyMessageIdFormat": false, "strictInjectionParameters": true, "strictInputAccessModifiers": true, "strictTemplates": true }
 }
