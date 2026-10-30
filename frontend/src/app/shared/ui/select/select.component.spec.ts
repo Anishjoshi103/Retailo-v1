@@ -1,0 +1,2 @@
+import { TestBed } from '@angular/core/testing'; import { SelectComponent } from './select.component';
+describe('SelectComponent',()=>{it('renders select control',async()=>{await TestBed.configureTestingModule({imports:[SelectComponent]}).compileComponents();const f=TestBed.createComponent(SelectComponent);f.componentRef.setInput('label','Branch');f.componentRef.setInput('options',[]);f.detectChanges();expect(f.nativeElement.querySelector('select')).toBeTruthy();});});

@@ -1,0 +1,2 @@
+import { TestBed } from '@angular/core/testing'; import { SkeletonComponent } from './skeleton.component';
+describe('SkeletonComponent',()=>{it('is hidden from assistive technology',async()=>{await TestBed.configureTestingModule({imports:[SkeletonComponent]}).compileComponents();const f=TestBed.createComponent(SkeletonComponent);f.detectChanges();expect(f.nativeElement.querySelector('[aria-hidden="true"]')).toBeTruthy();});});

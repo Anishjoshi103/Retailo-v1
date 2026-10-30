@@ -1,0 +1,2 @@
+import { TestBed } from '@angular/core/testing'; import { ButtonComponent } from './button.component';
+describe('ButtonComponent',()=>{it('renders its label',async()=>{await TestBed.configureTestingModule({imports:[ButtonComponent]}).compileComponents();const f=TestBed.createComponent(ButtonComponent);f.componentRef.setInput('label','Save');f.detectChanges();expect(f.nativeElement.textContent).toContain('Save');});});

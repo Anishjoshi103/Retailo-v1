@@ -1,0 +1,2 @@
+import { TestBed } from '@angular/core/testing'; import { ToastComponent } from './toast.component';
+describe('ToastComponent',()=>{it('announces the message',async()=>{await TestBed.configureTestingModule({imports:[ToastComponent]}).compileComponents();const f=TestBed.createComponent(ToastComponent);f.componentRef.setInput('message','Saved');f.detectChanges();expect(f.nativeElement.querySelector('[role="status"]').textContent).toContain('Saved');});});

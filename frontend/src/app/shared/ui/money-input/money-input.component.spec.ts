@@ -1,0 +1,2 @@
+import { TestBed } from '@angular/core/testing'; import { MoneyInputComponent } from './money-input.component';
+describe('MoneyInputComponent',()=>{it('emits a normalized decimal string without numeric conversion',async()=>{await TestBed.configureTestingModule({imports:[MoneyInputComponent]}).compileComponents();const f=TestBed.createComponent(MoneyInputComponent);f.componentRef.setInput('label','Amount');let emitted='';f.componentInstance.valueChange.subscribe(v=>emitted=v);f.detectChanges();f.componentInstance.onInput('1234.50');expect(emitted).toBe('1234.50');});});

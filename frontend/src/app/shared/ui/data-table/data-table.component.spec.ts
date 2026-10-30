@@ -1,0 +1,2 @@
+import { TestBed } from '@angular/core/testing'; import { DataTableComponent } from './data-table.component';
+describe('DataTableComponent',()=>{it('shows empty state',async()=>{await TestBed.configureTestingModule({imports:[DataTableComponent]}).compileComponents();const f=TestBed.createComponent(DataTableComponent);f.componentRef.setInput('rows',[]);f.componentRef.setInput('columns',[]);f.detectChanges();expect(f.nativeElement.textContent).toContain('No records found');});});
