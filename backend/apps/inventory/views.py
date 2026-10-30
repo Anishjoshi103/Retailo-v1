@@ -43,6 +43,14 @@ class StockAdjustmentView(APIView):
 
     def post(self, request):
         tenant_id = active_tenant_membership(request)
+        membership_id = request.auth.get("membership_id") if request.auth else None
+        membership = Membership.objects.filter(
+            pk=membership_id, tenant_id=tenant_id, user=request.user, is_active=True
+        ).first()
+        if membership is None or membership.role not in {
+            Membership.Role.OWNER, Membership.Role.ADMIN, Membership.Role.MANAGER
+        }:
+            raise PermissionDenied("Store manager permissions are required to adjust stock.")
         key = request.headers.get("Idempotency-Key", "").strip()
         if not key or len(key) > 128:
             return Response({"detail": "A valid Idempotency-Key header is required."}, status=status.HTTP_400_BAD_REQUEST)
