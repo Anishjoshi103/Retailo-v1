@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - "feat/**"
+      - "chore/**"
   workflow_dispatch:
 
 permissions:
@@ -94,7 +95,7 @@ jobs:
         run: npm run lint --if-present
 
       - name: Test
-        run: npm test -- --watch=false --browsers=ChromeHeadless
+        run: npm test -- --watch=false
         env:
           CI: "true"
 
