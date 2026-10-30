@@ -1,0 +1,1 @@
+<label class="rt-select"><span>{{label()}}</span><select [value]="value()" (change)="valueChange.emit($any($event.target).value)"><option value="">Select…</option>@for(option of options();track option.value){<option [value]="option.value">{{option.label}}</option>}</select></label>

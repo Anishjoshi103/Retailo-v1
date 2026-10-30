@@ -1,0 +1,2 @@
+import { TestBed } from '@angular/core/testing'; import { TextFieldComponent } from './text-field.component';
+describe('TextFieldComponent',()=>{it('renders a labelled input',async()=>{await TestBed.configureTestingModule({imports:[TextFieldComponent]}).compileComponents();const f=TestBed.createComponent(TextFieldComponent);f.componentRef.setInput('label','Search');f.detectChanges();expect(f.nativeElement.querySelector('input')).toBeTruthy();expect(f.nativeElement.textContent).toContain('Search');});});

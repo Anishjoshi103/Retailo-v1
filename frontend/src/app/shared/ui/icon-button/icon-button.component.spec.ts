@@ -1,0 +1,2 @@
+import { TestBed } from '@angular/core/testing'; import { IconButtonComponent } from './icon-button.component';
+describe('IconButtonComponent',()=>{it('exposes accessible label',async()=>{await TestBed.configureTestingModule({imports:[IconButtonComponent]}).compileComponents();const f=TestBed.createComponent(IconButtonComponent);f.componentRef.setInput('label','Close');f.detectChanges();expect(f.nativeElement.querySelector('button').getAttribute('aria-label')).toBe('Close');});});

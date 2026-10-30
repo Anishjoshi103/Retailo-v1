@@ -1,0 +1,2 @@
+import { TestBed } from '@angular/core/testing'; import { EmptyStateComponent } from './empty-state.component';
+describe('EmptyStateComponent',()=>{it('shows empty message',async()=>{await TestBed.configureTestingModule({imports:[EmptyStateComponent]}).compileComponents();const f=TestBed.createComponent(EmptyStateComponent);f.componentRef.setInput('title','No items');f.detectChanges();expect(f.nativeElement.textContent).toContain('No items');});});

@@ -1,0 +1,2 @@
+import { TestBed } from '@angular/core/testing'; import { DialogComponent } from './dialog.component';
+describe('DialogComponent',()=>{it('does not render while closed',async()=>{await TestBed.configureTestingModule({imports:[DialogComponent]}).compileComponents();const f=TestBed.createComponent(DialogComponent);f.componentRef.setInput('title','Confirm');f.detectChanges();expect(f.nativeElement.querySelector('[role="dialog"]')).toBeNull();});});
