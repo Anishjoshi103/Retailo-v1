@@ -3,13 +3,16 @@ import { inject } from '@angular/core';
 import { catchError, switchMap, throwError } from 'rxjs';
 import { APP_CONFIG } from '../config/app-config.token';
 import { SessionService } from './session.service';
+
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
-  const session = inject(SessionService); const base = inject(APP_CONFIG).apiBaseUrl.replace(/\/$/, '');
+  const session = inject(SessionService);
+  const base = inject(APP_CONFIG).apiBaseUrl.replace(/\/$/, '');
   if (!request.url.startsWith(base) || request.url.includes('/auth/refresh')) return next(request);
+
   const token = session.accessToken();
   const authorized = token ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : request;
   return next(authorized).pipe(catchError((error: unknown) => {
-    if (!(error instanceof HttpErrorResponse) || error.status !== 401 || !token) return throwError(() => error);
+    if (!(error instanceof HttpErrorResponse) || error.status !== 401) return throwError(() => error);
     return session.refreshAccessToken().pipe(switchMap((refreshed) => {
       if (!refreshed) { session.clearSession(); return throwError(() => error); }
       return next(request.clone({ setHeaders: { Authorization: `Bearer ${refreshed}` } }));
