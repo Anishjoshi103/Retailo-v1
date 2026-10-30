@@ -2,12 +2,10 @@ import uuid
 
 from django.conf import settings
 from django.db import models
-from django.db.models import QuerySet
-
-from apps.tenancy.models import TenantOwnedModel
+from apps.tenancy.models import TenantOwnedModel, TenantQuerySet
 
 
-class ImmutableQuerySet(QuerySet):
+class ImmutableQuerySet(TenantQuerySet):
     def update(self, **kwargs):
         raise TypeError("Stock movements are append-only.")
 
