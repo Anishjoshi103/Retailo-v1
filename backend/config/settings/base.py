@@ -13,6 +13,8 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "apps.tenancy",
     "apps.accounts",
+    "apps.catalog",
+    "apps.inventory",
     "rest_framework_simplejwt.token_blacklist",
     "rest_framework",
     "drf_spectacular",
