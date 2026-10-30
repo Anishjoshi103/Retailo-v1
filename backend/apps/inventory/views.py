@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from django.db import IntegrityError, transaction
 from django.db.models import F
 from rest_framework import generics, permissions, status
