@@ -33,6 +33,7 @@ class Product(TenantOwnedModel):
         ordering = ["name", "id"]
         constraints = [
             models.UniqueConstraint(fields=["tenant", "sku"], name="uq_product_tenant_sku"),
+            models.UniqueConstraint(fields=["tenant", "barcode"], condition=models.Q(barcode__isnull=False), name="uq_product_tenant_barcode"),
             models.CheckConstraint(condition=models.Q(gst_rate__gte=0, gst_rate__lte=100), name="ck_product_gst_rate_range"),
             models.CheckConstraint(condition=models.Q(selling_price__gte=0), name="ck_product_selling_price_nonnegative"),
             models.CheckConstraint(condition=models.Q(purchase_price__gte=0), name="ck_product_purchase_price_nonnegative"),
