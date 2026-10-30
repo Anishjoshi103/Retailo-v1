@@ -12,7 +12,9 @@ ALLOWED_HOSTS = [
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 INSTALLED_APPS = [
+    "django.contrib.auth",
     "django.contrib.contenttypes",
+    "apps.tenancy",
     "rest_framework",
     "drf_spectacular",
 ]
