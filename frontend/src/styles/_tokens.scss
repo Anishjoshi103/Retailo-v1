@@ -1,0 +1,96 @@
+$breakpoint-mobile: 720px;
+
+:root {
+  color-scheme: light;
+  --color-canvas: #f4f6fa;
+  --color-surface: #ffffff;
+  --color-heading: #172554;
+  --color-text: #172033;
+  --color-text-secondary: #536178;
+  --color-text-muted: #64748b;
+  --color-text-subtle: #8490a3;
+  --color-brand: #1d4ed8;
+  --color-brand-ink: #172554;
+  --color-on-brand: #ffffff;
+  --color-accent: #1d4ed8;
+  --color-border: #e1e6ef;
+  --color-focus: #2563eb;
+  --color-status-border: #dbeafe;
+  --color-status-background: #eff6ff;
+  --color-status-text: #1e40af;
+  --color-status-dot: #2563eb;
+
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.625rem;
+  --space-4: 1rem;
+  --space-5: 1.375rem;
+  --space-7: 1.75rem;
+  --space-10: 2.375rem;
+  --space-12: 2.875rem;
+  --space-14: 3.375rem;
+  --space-19: 4.75rem;
+
+  --radius-none: 0;
+  --radius-brand: 0.625rem;
+  --radius-card: 1rem;
+  --radius-pill: 999px;
+  --radius-circle: 50%;
+  --border-width: 1px;
+
+  --shadow-card: 0 0.3125rem 1.25rem rgb(23 37 84 / 3%);
+  --font-family-base: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-size-2xs: 0.75rem;
+  --font-size-xs: 0.8125rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1.125rem;
+  --font-size-lg: 1.0625rem;
+  --font-size-brand: 1.3125rem;
+  --font-size-hero-min: 2.25rem;
+  --font-size-hero-max: 3.625rem;
+  --font-weight-normal: 400;
+  --font-weight-bold: 700;
+  --font-weight-heavy: 800;
+  --line-height-tight: 1.04;
+  --line-height-body: 1.7;
+  --line-height-relaxed: 1.5;
+  --letter-spacing-tight: -0.04em;
+  --letter-spacing-heading: -0.055em;
+  --letter-spacing-eyebrow: 0.13em;
+
+  --layout-content-max: 70rem;
+  --layout-hero-max: 43.125rem;
+  --layout-intro-max: 37.5rem;
+  --size-topbar-height: 5.25rem;
+  --size-brand-mark: 2.125rem;
+  --size-status-dot: 0.5rem;
+  --size-module-card-min-height: 11.5625rem;
+  --size-module-description-min-height: 2.625rem;
+  --motion-duration-none: 0.01ms;
+  --motion-iteration-once: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --color-canvas: #101827;
+    --color-surface: #172235;
+    --color-heading: #f1f5f9;
+    --color-text: #e2e8f0;
+    --color-text-secondary: #c0ccdc;
+    --color-text-muted: #a7b5c8;
+    --color-text-subtle: #95a4ba;
+    --color-brand: #3b82f6;
+    --color-brand-ink: #f1f5f9;
+    --color-on-brand: #ffffff;
+    --color-accent: #93c5fd;
+    --color-border: #334155;
+    --color-focus: #93c5fd;
+    --color-status-border: #29476e;
+    --color-status-background: #172c49;
+    --color-status-text: #bfdbfe;
+    --color-status-dot: #60a5fa;
+    --shadow-card: 0 0.3125rem 1.25rem rgb(0 0 0 / 18%);
+  }
+}
