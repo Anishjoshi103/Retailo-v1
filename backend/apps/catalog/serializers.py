@@ -42,6 +42,6 @@ class ProductSerializer(serializers.ModelSerializer):
         return value
 
     def validate_gst_rate(self, value: Decimal):
-        if value not in {Decimal("0"), Decimal("0.25"), Decimal("3"), Decimal("5"), Decimal("12"), Decimal("18"), Decimal("28")}:
-            raise serializers.ValidationError("Use a configured GST rate: 0, 0.25, 3, 5, 12, 18, or 28 percent.")
+        if value < Decimal("0") or value > Decimal("100"):
+            raise serializers.ValidationError("GST rate must be between 0 and 100 percent.")
         return value
