@@ -74,6 +74,22 @@ class CatalogApiTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(StockMovement.objects.count(), 0)
 
+
+    def test_cashier_cannot_create_products_or_adjust_stock(self):
+        self.membership.role = Membership.Role.CASHIER
+        self.membership.save(update_fields=["role"])
+        product_payload = {"sku": "CASHIER-1", "name": "Milk", "unit": "each", "gst_rate": "5.00", "selling_price": "35.00", "purchase_price": "28.00"}
+        product_response = self.client.post("/api/v1/products", product_payload, format="json")
+        self.assertEqual(product_response.status_code, 403)
+        product = self.product()
+        adjustment_response = self.client.post(
+            "/api/v1/inventory/adjustments",
+            {"branch_id": str(self.branch.id), "product_id": str(product.id), "quantity_delta": "1.000"},
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="cashier-adjust-1",
+        )
+        self.assertEqual(adjustment_response.status_code, 403)
+
     def test_stock_movements_are_append_only(self):
         product = self.product()
         movement = StockMovement.objects.create(tenant=self.tenant, branch=self.branch, product=product, quantity_delta=Decimal("1.000"), reason=StockMovement.Reason.OPENING, created_by=self.user)
