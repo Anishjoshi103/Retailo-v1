@@ -1,0 +1,6 @@
+mypy>=1.15,<2
+django-stubs[compatible-mypy]>=5.1,<6
+pytest>=8.3,<9
+pytest-django>=4.9,<5
+ruff>=0.11,<1
+pip-audit>=2.8,<3
