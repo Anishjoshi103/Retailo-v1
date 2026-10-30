@@ -8,7 +8,7 @@ from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core import signing
 from django.core.mail import send_mail
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.text import slugify
@@ -97,7 +97,7 @@ class RegisterView(APIView):
                     message=f"Verify your Retailo account within 24 hours by opening:\n\n{verify_url}\n\nIf you did not request this, you can ignore this email.",
                     recipient=email,
                 )
-        except (ValueError, RuntimeError, OSError, SMTPException):
+        except (IntegrityError, ValueError, RuntimeError, OSError, SMTPException):
             logger.exception("Registration setup or verification email delivery failed")
             return Response({"detail": "If this address can be registered, verification instructions will be sent."}, status=status.HTTP_202_ACCEPTED)
         return Response({"detail": "If this address can be registered, verification instructions will be sent."}, status=status.HTTP_202_ACCEPTED)
