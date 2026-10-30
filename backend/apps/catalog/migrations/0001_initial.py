@@ -29,6 +29,7 @@ class Migration(migrations.Migration):
             options={"ordering": ["name", "id"]},
         ),
         migrations.AddConstraint(model_name="product", constraint=models.UniqueConstraint(fields=("tenant", "sku"), name="uq_product_tenant_sku")),
+        migrations.AddConstraint(model_name="product", constraint=models.UniqueConstraint(condition=models.Q(("barcode__isnull", False)), fields=("tenant", "barcode"), name="uq_product_tenant_barcode")),
         migrations.AddConstraint(model_name="product", constraint=models.CheckConstraint(condition=models.Q(("gst_rate__gte", 0), ("gst_rate__lte", 100)), name="ck_product_gst_rate_range")),
         migrations.AddConstraint(model_name="product", constraint=models.CheckConstraint(condition=models.Q(("selling_price__gte", 0)), name="ck_product_selling_price_nonnegative")),
         migrations.AddConstraint(model_name="product", constraint=models.CheckConstraint(condition=models.Q(("purchase_price__gte", 0)), name="ck_product_purchase_price_nonnegative")),
