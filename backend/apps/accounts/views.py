@@ -1,4 +1,5 @@
 import uuid
+from smtplib import SMTPException
 from urllib.parse import urlencode
 
 from django.conf import settings
@@ -88,13 +89,13 @@ class RegisterView(APIView):
                 Branch.objects.create(tenant=tenant, name="Main Branch", code="MAIN", is_active=True)
                 token = signing.dumps({"user_id": str(user.pk)}, salt=EMAIL_VERIFICATION_SALT)
                 verify_url = _frontend_url("/auth/verify-email", {"token": token})
-                transaction.on_commit(lambda: _send_account_email(
+                _send_account_email(
                     subject="Verify your Retailo account",
                     message=f"Verify your Retailo account within 24 hours by opening:\n\n{verify_url}\n\nIf you did not request this, you can ignore this email.",
                     recipient=email,
-                ))
-        except (ValueError, RuntimeError) as exc:
-            return Response({"detail": "Registration email could not be prepared. Please try again later."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+                )
+        except (ValueError, RuntimeError, OSError, SMTPException):
+            return Response({"detail": "Registration could not be completed right now. Please try again later."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         return Response({"detail": "If this address can be registered, verification instructions will be sent."}, status=status.HTTP_202_ACCEPTED)
 
 
