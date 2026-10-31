@@ -31,6 +31,7 @@ class PurchaseReceiptCreateView(APIView):
         data = serializer.validated_data
         canonical = {
             "branch_id": str(data["branch"].id),
+            "supplier_id": str(data["supplier"].id) if data.get("supplier") else None,
             "supplier_name": data["supplier_name"],
             "supplier_invoice_number": data.get("supplier_invoice_number", ""),
             "lines": sorted([
@@ -47,7 +48,7 @@ class PurchaseReceiptCreateView(APIView):
                         return Response({"detail": "Idempotency-Key was already used for a different receipt."}, status=status.HTTP_409_CONFLICT)
                     return Response(self._response(prior, replayed=True), status=status.HTTP_200_OK)
                 receipt = PurchaseReceipt.objects.create(
-                    tenant_id=tenant_id, branch=data["branch"], supplier_name=data["supplier_name"],
+                    tenant_id=tenant_id, branch=data["branch"], supplier=data.get("supplier"), supplier_name=data["supplier_name"],
                     supplier_invoice_number=data.get("supplier_invoice_number", ""), idempotency_key=key,
                     request_hash=request_hash, created_by=request.user,
                 )
@@ -71,6 +72,7 @@ class PurchaseReceiptCreateView(APIView):
     def _response(receipt, replayed):
         return {
             "id": str(receipt.id), "branch_id": str(receipt.branch_id),
+            "supplier_id": str(receipt.supplier_id) if receipt.supplier_id else None,
             "supplier_name": receipt.supplier_name, "supplier_invoice_number": receipt.supplier_invoice_number,
             "received_at": receipt.received_at.isoformat(), "replayed": replayed,
             "lines": [{"product_id": str(line.product_id), "quantity": str(line.quantity), "unit_cost": str(line.unit_cost)} for line in receipt.lines.all().order_by("id")],
