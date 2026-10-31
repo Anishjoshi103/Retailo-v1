@@ -1,0 +1,42 @@
+:host { display: block; color: var(--color-text); }
+.catalog { width: min(100%, 76rem); margin-inline: auto; padding: var(--space-6); }
+.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-6); }
+.eyebrow { margin: 0 0 var(--space-2); color: var(--color-brand); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); letter-spacing: var(--letter-spacing-eyebrow); }
+h1 { margin: 0; color: var(--color-heading); font-size: clamp(1.75rem, 4vw, 2.5rem); letter-spacing: var(--letter-spacing-tight); }
+.intro { margin: var(--space-2) 0 0; color: var(--color-text-secondary); }
+.count { flex: none; border: 1px solid var(--color-border); border-radius: var(--radius-full); padding: var(--space-2) var(--space-4); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.filters { display: flex; align-items: flex-end; gap: var(--space-3); margin-bottom: var(--space-5); padding: var(--space-4); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); }
+label { display: grid; gap: var(--space-2); min-width: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); }
+.search-field { flex: 1; }
+input, select { width: 100%; min-height: 2.75rem; padding: 0 var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); font: inherit; font-weight: var(--font-weight-normal); }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.status-field { width: min(12rem, 32%); }
+button { min-height: 2.75rem; border: 0; border-radius: var(--radius-md); padding: 0 var(--space-5); background: var(--color-brand); color: var(--color-on-brand); font: inherit; font-weight: var(--font-weight-bold); cursor: pointer; }
+.table-wrap { overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th { padding: var(--space-4); color: var(--color-text-muted); background: var(--color-canvas); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); white-space: nowrap; }
+td { padding: var(--space-4); border-top: 1px solid var(--color-border); font-size: var(--font-size-sm); }
+.product-name, .product-meta { display: block; }
+.product-name { color: var(--color-heading); font-weight: var(--font-weight-bold); }
+.product-meta { margin-top: var(--space-1); color: var(--color-text-muted); font-size: var(--font-size-xs); }
+.sku { font-variant-numeric: tabular-nums; }
+.numeric { text-align: right; }
+.price { white-space: nowrap; font-weight: var(--font-weight-bold); font-variant-numeric: tabular-nums; }
+.status { display: inline-block; padding: var(--space-1) var(--space-2); border-radius: var(--radius-full); background: var(--color-status-background); color: var(--color-status-text); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); }
+.status-inactive { background: var(--color-canvas); color: var(--color-text-muted); }
+.notice { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4); color: var(--color-text-secondary); }
+.notice-error { margin-bottom: var(--space-4); border: 1px solid var(--color-danger); border-radius: var(--radius-md); color: var(--color-danger); }
+.text-button { min-height: auto; padding: var(--space-2); background: transparent; color: inherit; text-decoration: underline; }
+.empty-state { display: grid; justify-items: center; padding: var(--space-10) var(--space-4); text-align: center; }
+.empty-mark { display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: var(--radius-full); background: var(--color-status-background); color: var(--color-brand); font-size: 1.75rem; }
+h2 { margin: var(--space-4) 0 var(--space-2); color: var(--color-heading); font-size: var(--font-size-lg); }
+.empty-state p, .tax-note { max-width: 38rem; color: var(--color-text-muted); font-size: var(--font-size-sm); line-height: var(--line-height-body); }
+.tax-note { margin: var(--space-3) 0 0; }
+@media (max-width: 720px) {
+  .catalog { padding: var(--space-4); }
+  .page-header { align-items: flex-start; }
+  .filters { align-items: stretch; flex-direction: column; }
+  .status-field { width: 100%; }
+  .search-button { width: 100%; }
+  table { min-width: 42rem; }
+}

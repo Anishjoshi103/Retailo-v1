@@ -1,0 +1,82 @@
+<section class="catalog" aria-labelledby="catalog-title">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">PRODUCTS</p>
+      <h1 id="catalog-title">Catalog</h1>
+      <p class="intro">Manage the products your store sells and their GST details.</p>
+    </div>
+    <span class="count" aria-live="polite">{{ products().length }} shown</span>
+  </header>
+
+  <form class="filters" (ngSubmit)="submitSearch()">
+    <label class="search-field">
+      <span>Search products</span>
+      <input
+        name="search"
+        type="search"
+        autocomplete="off"
+        placeholder="Name, SKU or barcode"
+        [ngModel]="searchText()"
+        (ngModelChange)="searchText.set($event)"
+      />
+    </label>
+    <label class="status-field">
+      <span>Status</span>
+      <select
+        name="status"
+        [ngModel]="activeFilter()"
+        (ngModelChange)="setActiveFilter($event)"
+      >
+        <option value="all">All products</option>
+        <option value="active">Active only</option>
+      </select>
+    </label>
+    <button class="search-button" type="submit">Search</button>
+  </form>
+
+  @if (errorMessage()) {
+    <div class="notice notice-error" role="alert">
+      <span>{{ errorMessage() }}</span>
+      <button type="button" class="text-button" (click)="loadProducts()">Try again</button>
+    </div>
+  }
+
+  <div class="table-wrap" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <div class="notice" role="status">Loading products…</div>
+    } @else if (!errorMessage() && products().length === 0) {
+      <div class="empty-state">
+        <span class="empty-mark" aria-hidden="true">＋</span>
+        <h2>No products found</h2>
+        <p>Try another search or clear the filters. Product creation will be added in a follow-up step.</p>
+      </div>
+    } @else if (products().length > 0) {
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Product</th>
+            <th scope="col">SKU</th>
+            <th scope="col">GST</th>
+            <th scope="col" class="numeric">Selling price</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (product of products(); track trackProduct($index, product)) {
+            <tr>
+              <td>
+                <span class="product-name">{{ product.name }}</span>
+                <span class="product-meta">{{ product.unit }}@if (product.hsn_code) { · HSN {{ product.hsn_code }} }</span>
+              </td>
+              <td class="sku">{{ product.sku }}</td>
+              <td>{{ product.gst_rate }}%</td>
+              <td class="numeric price">₹{{ product.selling_price }}</td>
+              <td><span class="status" [class.status-inactive]="!product.is_active">{{ product.is_active ? 'Active' : 'Inactive' }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+  <p class="tax-note">GST rates shown here are product data only. Invoice tax must be calculated and validated by the backend.</p>
+</section>
