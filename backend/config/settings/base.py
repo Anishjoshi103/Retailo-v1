@@ -15,6 +15,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.catalog",
     "apps.inventory",
+    "apps.gst",
     "rest_framework_simplejwt.token_blacklist",
     "rest_framework",
     "drf_spectacular",
