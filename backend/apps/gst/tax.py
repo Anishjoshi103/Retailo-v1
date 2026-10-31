@@ -1,4 +1,4 @@
-""""Deterministic GST calculation primitives for server-side document snapshots.
+"""Deterministic GST calculation primitives for server-side document snapshots.
 
 These helpers calculate tax only. They do not post stock, supplier balances, or accounting entries.
 """
