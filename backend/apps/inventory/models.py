@@ -190,3 +190,136 @@ class PurchaseReturnLine(TenantOwnedModel):
 
     def delete(self, *args, **kwargs):
         raise TypeError("Posted purchase return lines are immutable.")
+
+
+
+class PurchaseInvoice(TenantOwnedModel):
+    """Supplier tax invoice snapshot; stock is not changed by invoice recording."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        POSTED = "posted", "Posted"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    supplier = models.ForeignKey(Supplier, on_delete=models.PROTECT, related_name="purchase_invoices")
+    branch = models.ForeignKey("tenancy.Branch", on_delete=models.PROTECT, related_name="purchase_invoices")
+    supplier_name = models.CharField(max_length=180)
+    supplier_gstin = models.CharField(max_length=15, blank=True)
+    supplier_state_code = models.CharField(max_length=2)
+    place_of_supply_state_code = models.CharField(max_length=2)
+    invoice_number = models.CharField(max_length=80, blank=True)
+    invoice_date = models.DateField()
+    status = models.CharField(max_length=8, choices=Status.choices, default=Status.DRAFT)
+    taxable_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    tax_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    idempotency_key = models.CharField(max_length=128)
+    request_hash = models.CharField(max_length=64)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    posted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-invoice_date", "-id"]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "idempotency_key"], name="uq_purchase_invoice_tenant_idem"),
+            models.UniqueConstraint(
+                fields=["tenant", "supplier", "invoice_number"],
+                condition=~models.Q(invoice_number=""),
+                name="uq_purchase_invoice_supplier_number",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(taxable_total__gte=0) & models.Q(tax_total__gte=0) & models.Q(total_amount__gte=0),
+                name="ck_purchase_invoice_totals_nonnegative",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["tenant", "supplier", "invoice_date"], name="ix_purchase_invoice_supplier_date"),
+            models.Index(fields=["tenant", "branch", "status"], name="ix_purchase_invoice_branch_status"),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            existing = type(self).objects.filter(pk=self.pk).first()
+            if existing and existing.status == self.Status.POSTED:
+                raise TypeError("Posted purchase invoices are immutable; use a reversal or credit note.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.status == self.Status.POSTED:
+            raise TypeError("Posted purchase invoices are immutable; use a reversal or credit note.")
+        super().delete(*args, **kwargs)
+
+
+class PurchaseInvoiceLine(TenantOwnedModel):
+    """Billed line with a persisted, auditable GST calculation snapshot."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    invoice = models.ForeignKey(PurchaseInvoice, on_delete=models.PROTECT, related_name="lines")
+    product = models.ForeignKey("catalog.Product", on_delete=models.PROTECT, related_name="purchase_invoice_lines")
+    description_snapshot = models.CharField(max_length=240)
+    hsn_code = models.CharField(max_length=16, blank=True)
+    quantity = models.DecimalField(max_digits=14, decimal_places=3)
+    unit_price = models.DecimalField(max_digits=14, decimal_places=4)
+    discount_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    taxable_value = models.DecimalField(max_digits=14, decimal_places=2)
+    gst_rate = models.DecimalField(max_digits=5, decimal_places=2)
+    cgst_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    sgst_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    igst_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    total_tax = models.DecimalField(max_digits=14, decimal_places=2)
+    total_amount = models.DecimalField(max_digits=14, decimal_places=2)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=models.Q(quantity__gt=0), name="ck_purchase_invoice_line_qty_positive"),
+            models.CheckConstraint(condition=models.Q(unit_price__gte=0), name="ck_purchase_invoice_line_price_nonnegative"),
+            models.CheckConstraint(condition=models.Q(discount_amount__gte=0), name="ck_purchase_invoice_line_discount_nonnegative"),
+            models.CheckConstraint(condition=models.Q(taxable_value__gte=0), name="ck_purchase_invoice_line_taxable_nonnegative"),
+            models.CheckConstraint(condition=models.Q(gst_rate__gte=0) & models.Q(gst_rate__lte=100), name="ck_purchase_invoice_line_rate_bounds"),
+            models.CheckConstraint(
+                condition=models.Q(cgst_amount__gte=0) & models.Q(sgst_amount__gte=0) & models.Q(igst_amount__gte=0)
+                & models.Q(total_tax__gte=0) & models.Q(total_amount__gte=0),
+                name="ck_purchase_invoice_line_tax_nonnegative",
+            ),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.invoice.status == PurchaseInvoice.Status.POSTED:
+            raise TypeError("Lines on posted purchase invoices are immutable.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.invoice.status == PurchaseInvoice.Status.POSTED:
+            raise TypeError("Lines on posted purchase invoices are immutable.")
+        super().delete(*args, **kwargs)
+
+
+class PurchaseInvoiceAllocation(TenantOwnedModel):
+    """Allocation of a billed line to a received GRN line."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    invoice_line = models.ForeignKey(PurchaseInvoiceLine, on_delete=models.PROTECT, related_name="grn_allocations")
+    receipt_line = models.ForeignKey(PurchaseReceiptLine, on_delete=models.PROTECT, related_name="invoice_allocations")
+    quantity = models.DecimalField(max_digits=14, decimal_places=3)
+    taxable_value = models.DecimalField(max_digits=14, decimal_places=2)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=models.Q(quantity__gt=0), name="ck_invoice_allocation_qty_positive"),
+            models.CheckConstraint(condition=models.Q(taxable_value__gte=0), name="ck_invoice_allocation_value_nonnegative"),
+            models.UniqueConstraint(fields=["invoice_line", "receipt_line"], name="uq_invoice_line_grn_line"),
+        ]
+        indexes = [
+            models.Index(fields=["tenant", "receipt_line"], name="ix_invoice_alloc_tenant_grn_line"),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.invoice_line.invoice.status == PurchaseInvoice.Status.POSTED:
+            raise TypeError("Allocations on posted purchase invoices are immutable.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.invoice_line.invoice.status == PurchaseInvoice.Status.POSTED:
+            raise TypeError("Allocations on posted purchase invoices are immutable.")
+        super().delete(*args, **kwargs)
