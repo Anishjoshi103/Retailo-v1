@@ -28,7 +28,7 @@ class PurchaseReceiptInputSerializer(serializers.Serializer):
             raise serializers.ValidationError({"lines": "Each product may appear only once per receipt; combine quantities for duplicate products."})
         products = Product.objects.for_tenant(tenant_id).filter(pk__in=product_ids, is_active=True)
         by_id = {product.id: product for product in products}
-        if set(by_id) != product_ids:
+        if set(by_id) != set(product_ids):
             raise serializers.ValidationError({"lines": "Every product must be active and belong to your store."})
         for line in attrs["lines"]:
             line["product"] = by_id[line["product_id"]]
