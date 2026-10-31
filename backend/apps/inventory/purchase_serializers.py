@@ -23,7 +23,9 @@ class PurchaseReceiptInputSerializer(serializers.Serializer):
         branch = Branch.objects.for_tenant(tenant_id).filter(pk=attrs["branch_id"], is_active=True).first()
         if branch is None:
             raise serializers.ValidationError({"branch_id": "Select an active branch in your store."})
-        product_ids = {line["product_id"] for line in attrs["lines"]}
+        product_ids = [line["product_id"] for line in attrs["lines"]]
+        if len(set(product_ids)) != len(product_ids):
+            raise serializers.ValidationError({"lines": "Each product may appear only once per receipt; combine quantities for duplicate products."})
         products = Product.objects.for_tenant(tenant_id).filter(pk__in=product_ids, is_active=True)
         by_id = {product.id: product for product in products}
         if set(by_id) != product_ids:
