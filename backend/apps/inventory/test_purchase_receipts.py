@@ -6,7 +6,7 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.catalog.models import Product
-from apps.inventory.models import InventoryBalance, PurchaseReceipt, StockMovement
+from apps.inventory.models import InventoryBalance, PurchaseReceipt, StockMovement, Supplier
 from apps.tenancy.models import Branch, Membership, Tenant
 
 
@@ -82,6 +82,26 @@ class PurchaseReceiptApiTests(TestCase):
         payload["lines"].append(payload["lines"][0].copy())
         response = self.client.post("/api/v1/inventory/receipts", payload, format="json", HTTP_IDEMPOTENCY_KEY="receipt-duplicate-line")
         self.assertEqual(response.status_code, 400)
+
+    def test_receipt_can_reference_supplier_master(self):
+        supplier = Supplier.objects.create(tenant=self.tenant, name="Supplier Master One", gstin="27AABCU9603R1ZM")
+        payload = self.payload()
+        payload.pop("supplier_name")
+        payload["supplier_id"] = str(supplier.id)
+        response = self.client.post("/api/v1/inventory/receipts", payload, format="json", HTTP_IDEMPOTENCY_KEY="receipt-supplier-master")
+        self.assertEqual(response.status_code, 201, response.content)
+        receipt = PurchaseReceipt.objects.for_tenant(self.tenant.id).get()
+        self.assertEqual(receipt.supplier_id, supplier.id)
+        self.assertEqual(receipt.supplier_name, supplier.name)
+
+    def test_receipt_rejects_supplier_from_another_tenant(self):
+        supplier = Supplier.objects.create(tenant=self.other_tenant, name="Foreign Supplier")
+        payload = self.payload()
+        payload.pop("supplier_name")
+        payload["supplier_id"] = str(supplier.id)
+        response = self.client.post("/api/v1/inventory/receipts", payload, format="json", HTTP_IDEMPOTENCY_KEY="receipt-foreign-supplier")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(PurchaseReceipt.objects.count(), 0)
 
     def test_cashier_cannot_post_receipt(self):
         self.membership.role = Membership.Role.CASHIER

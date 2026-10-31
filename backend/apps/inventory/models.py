@@ -70,6 +70,7 @@ class PurchaseReceipt(TenantOwnedModel):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     branch = models.ForeignKey("tenancy.Branch", on_delete=models.PROTECT, related_name="purchase_receipts")
+    supplier = models.ForeignKey("Supplier", on_delete=models.PROTECT, null=True, blank=True, related_name="receipts")
     supplier_name = models.CharField(max_length=180)
     supplier_invoice_number = models.CharField(max_length=80, blank=True)
     idempotency_key = models.CharField(max_length=128)
@@ -113,3 +114,31 @@ class PurchaseReceiptLine(TenantOwnedModel):
 
     def delete(self, *args, **kwargs):
         raise TypeError("Posted purchase receipt lines are immutable.")
+
+
+class Supplier(TenantOwnedModel):
+    """Tenant-owned supplier master; receipts retain supplier snapshots for audit."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=180)
+    gstin = models.CharField(max_length=15, blank=True)
+    phone = models.CharField(max_length=32, blank=True)
+    email = models.EmailField(max_length=254, blank=True)
+    address = models.CharField(max_length=500, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "gstin"],
+                condition=~models.Q(gstin=""),
+                name="uq_supplier_tenant_gstin",
+            ),
+        ]
+        indexes = [models.Index(fields=["tenant", "is_active", "name"], name="ix_supplier_tenant_active_name")]
+
+    def __str__(self):
+        return f"{self.name} ({self.gstin})" if self.gstin else self.name
