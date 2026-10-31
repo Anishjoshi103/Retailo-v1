@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from apps.catalog.models import Product
 from apps.tenancy.models import Branch
+from .models import Supplier
 
 
 class PurchaseReceiptLineInputSerializer(serializers.Serializer):
@@ -14,7 +15,8 @@ class PurchaseReceiptLineInputSerializer(serializers.Serializer):
 
 class PurchaseReceiptInputSerializer(serializers.Serializer):
     branch_id = serializers.UUIDField()
-    supplier_name = serializers.CharField(max_length=180, trim_whitespace=True)
+    supplier_id = serializers.UUIDField(required=False)
+    supplier_name = serializers.CharField(max_length=180, required=False, allow_blank=True, trim_whitespace=True)
     supplier_invoice_number = serializers.CharField(max_length=80, required=False, allow_blank=True, trim_whitespace=True)
     lines = PurchaseReceiptLineInputSerializer(many=True, allow_empty=False, max_length=500)
 
@@ -32,5 +34,19 @@ class PurchaseReceiptInputSerializer(serializers.Serializer):
             raise serializers.ValidationError({"lines": "Every product must be active and belong to your store."})
         for line in attrs["lines"]:
             line["product"] = by_id[line["product_id"]]
+        supplier = None
+        supplier_id = attrs.get("supplier_id")
+        supplier_name = attrs.get("supplier_name", "").strip()
+        if supplier_id:
+            supplier = Supplier.objects.for_tenant(tenant_id).filter(pk=supplier_id, is_active=True).first()
+            if supplier is None:
+                raise serializers.ValidationError({"supplier_id": "Select an active supplier in your store."})
+            if supplier_name and supplier_name != supplier.name:
+                raise serializers.ValidationError({"supplier_name": "Supplier name is taken from the selected supplier record."})
+            supplier_name = supplier.name
+        if not supplier_name:
+            raise serializers.ValidationError({"supplier_name": "Provide a supplier name or select a supplier record."})
+        attrs["supplier"] = supplier
+        attrs["supplier_name"] = supplier_name
         attrs["branch"] = branch
         return attrs
