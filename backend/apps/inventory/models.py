@@ -142,3 +142,51 @@ class Supplier(TenantOwnedModel):
 
     def __str__(self):
         return f"{self.name} ({self.gstin})" if self.gstin else self.name
+
+
+class PurchaseReturn(TenantOwnedModel):
+    """Posted supplier return; stock corrections are represented by immutable return records."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    receipt = models.ForeignKey(PurchaseReceipt, on_delete=models.PROTECT, related_name="returns")
+    branch = models.ForeignKey("tenancy.Branch", on_delete=models.PROTECT, related_name="purchase_returns")
+    supplier_name = models.CharField(max_length=180)
+    reason = models.CharField(max_length=500)
+    idempotency_key = models.CharField(max_length=128)
+    request_hash = models.CharField(max_length=64)
+    returned_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+    class Meta:
+        ordering = ["-returned_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "idempotency_key"], name="uq_purchase_return_tenant_idem"),
+        ]
+        indexes = [models.Index(fields=["tenant", "receipt", "returned_at"], name="ix_return_tenant_receipt_date")]
+
+    def save(self, *args, **kwargs):
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+            raise TypeError("Posted purchase returns are immutable.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise TypeError("Posted purchase returns are immutable.")
+
+
+class PurchaseReturnLine(TenantOwnedModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    purchase_return = models.ForeignKey(PurchaseReturn, on_delete=models.PROTECT, related_name="lines")
+    receipt_line = models.ForeignKey(PurchaseReceiptLine, on_delete=models.PROTECT, related_name="return_lines")
+    product = models.ForeignKey("catalog.Product", on_delete=models.PROTECT, related_name="purchase_return_lines")
+    quantity = models.DecimalField(max_digits=14, decimal_places=3)
+
+    class Meta:
+        constraints = [models.CheckConstraint(condition=models.Q(quantity__gt=0), name="ck_purchase_return_qty_positive")]
+
+    def save(self, *args, **kwargs):
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+            raise TypeError("Posted purchase return lines are immutable.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise TypeError("Posted purchase return lines are immutable.")
