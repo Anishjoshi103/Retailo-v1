@@ -63,3 +63,53 @@ class InventoryBalance(TenantOwnedModel):
             models.UniqueConstraint(fields=["tenant", "branch", "product"], name="uq_inventory_tenant_branch_product"),
         ]
         indexes = [models.Index(fields=["tenant", "branch", "product"], name="ix_inventory_lookup")]
+
+
+class PurchaseReceipt(TenantOwnedModel):
+    """Posted goods receipt; corrections are represented by compensating movements."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    branch = models.ForeignKey("tenancy.Branch", on_delete=models.PROTECT, related_name="purchase_receipts")
+    supplier_name = models.CharField(max_length=180)
+    supplier_invoice_number = models.CharField(max_length=80, blank=True)
+    idempotency_key = models.CharField(max_length=128)
+    request_hash = models.CharField(max_length=64)
+    received_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+    class Meta:
+        ordering = ["-received_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "idempotency_key"], name="uq_receipt_tenant_idem"),
+        ]
+        indexes = [models.Index(fields=["tenant", "branch", "received_at"], name="ix_receipt_tenant_branch_date")]
+
+    def save(self, *args, **kwargs):
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+            raise TypeError("Posted purchase receipts are immutable.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise TypeError("Posted purchase receipts are immutable; use compensating movements.")
+
+
+class PurchaseReceiptLine(TenantOwnedModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    receipt = models.ForeignKey(PurchaseReceipt, on_delete=models.PROTECT, related_name="lines")
+    product = models.ForeignKey("catalog.Product", on_delete=models.PROTECT, related_name="purchase_receipt_lines")
+    quantity = models.DecimalField(max_digits=14, decimal_places=3)
+    unit_cost = models.DecimalField(max_digits=12, decimal_places=2)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=models.Q(quantity__gt=0), name="ck_receipt_line_qty_positive"),
+            models.CheckConstraint(condition=models.Q(unit_cost__gte=0), name="ck_receipt_line_cost_nonnegative"),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+            raise TypeError("Posted purchase receipt lines are immutable.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise TypeError("Posted purchase receipt lines are immutable.")
