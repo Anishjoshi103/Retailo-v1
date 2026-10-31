@@ -103,6 +103,50 @@ class PurchaseReceiptApiTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(PurchaseReceipt.objects.count(), 0)
 
+    def _post_receipt_for_return(self, key="receipt-for-return"):
+        response = self.client.post("/api/v1/inventory/receipts", self.payload(), format="json", HTTP_IDEMPOTENCY_KEY=key)
+        self.assertEqual(response.status_code, 201, response.content)
+        receipt = PurchaseReceipt.objects.for_tenant(self.tenant.id).get(pk=response.json()["id"])
+        receipt_line = receipt.lines.get()
+        return receipt, receipt_line
+
+    def test_supplier_return_reduces_stock_and_appends_negative_movement(self):
+        receipt, receipt_line = self._post_receipt_for_return()
+        response = self.client.post(
+            "/api/v1/inventory/returns",
+            {"receipt_id": str(receipt.id), "reason": "Damaged packaging", "lines": [{"receipt_line_id": str(receipt_line.id), "quantity": "2.500"}]},
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="return-1",
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        balance = InventoryBalance.objects.for_tenant(self.tenant.id).get()
+        self.assertEqual(balance.quantity_on_hand, Decimal("10.000"))
+        movement = StockMovement.objects.for_tenant(self.tenant.id).get(reason=StockMovement.Reason.RETURN)
+        self.assertEqual(movement.quantity_delta, Decimal("-2.500"))
+
+    def test_supplier_return_retry_does_not_reduce_stock_twice(self):
+        receipt, receipt_line = self._post_receipt_for_return()
+        payload = {"receipt_id": str(receipt.id), "reason": "Damaged packaging", "lines": [{"receipt_line_id": str(receipt_line.id), "quantity": "2.500"}]}
+        first = self.client.post("/api/v1/inventory/returns", payload, format="json", HTTP_IDEMPOTENCY_KEY="return-retry")
+        second = self.client.post("/api/v1/inventory/returns", payload, format="json", HTTP_IDEMPOTENCY_KEY="return-retry")
+        self.assertEqual(first.status_code, 201, first.content)
+        self.assertEqual(second.status_code, 200, second.content)
+        self.assertTrue(second.json()["replayed"])
+        self.assertEqual(InventoryBalance.objects.for_tenant(self.tenant.id).get().quantity_on_hand, Decimal("10.000"))
+        self.assertEqual(StockMovement.objects.for_tenant(self.tenant.id).filter(reason=StockMovement.Reason.RETURN).count(), 1)
+
+    def test_supplier_return_cannot_exceed_received_quantity_or_available_stock(self):
+        receipt, receipt_line = self._post_receipt_for_return()
+        response = self.client.post(
+            "/api/v1/inventory/returns",
+            {"receipt_id": str(receipt.id), "reason": "Excess return", "lines": [{"receipt_line_id": str(receipt_line.id), "quantity": "13.000"}]},
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="return-too-much",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(InventoryBalance.objects.for_tenant(self.tenant.id).get().quantity_on_hand, Decimal("12.500"))
+        self.assertEqual(StockMovement.objects.for_tenant(self.tenant.id).filter(reason=StockMovement.Reason.RETURN).count(), 0)
+
     def test_cashier_cannot_post_receipt(self):
         self.membership.role = Membership.Role.CASHIER
         self.membership.save(update_fields=["role"])
