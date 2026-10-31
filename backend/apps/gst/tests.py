@@ -56,3 +56,16 @@ class CalculateGstTests(SimpleTestCase):
     def test_rejects_malformed_state_code(self):
         with self.assertRaisesMessage(ValueError, "supplier_state_code must be a two-digit state code string"):
             calculate_gst("100.00", "18.00", "Maharashtra", "27")
+
+    def test_normalizes_taxable_value_before_calculation(self):
+        result = calculate_gst("100.005", "18.00", "27", "29")
+
+        self.assertEqual(result["taxable_value"], "100.01")
+        self.assertEqual(result["igst_amount"], "18.00")
+        self.assertEqual(result["total_amount"], "118.01")
+
+    def test_rejects_boolean_and_non_finite_decimal_inputs(self):
+        for value in (True, "NaN", "Infinity"):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    calculate_gst(value, "18.00", "27", "27")
