@@ -120,7 +120,13 @@ def post_purchase_invoice(*, tenant_id, invoice_id):
                 .values_list("quantity", flat=True),
                 Decimal("0"),
             )
-            if billed_quantity + allocated_quantity_for_receipt_line(allocations, receipt_line.id) > receipt_line.quantity - returned_quantity:
+            current_invoice_quantity = sum(
+                PurchaseInvoiceAllocation.objects.for_tenant(tenant_id)
+                .filter(receipt_line=receipt_line, invoice_line__invoice=invoice)
+                .values_list("quantity", flat=True),
+                Decimal("0"),
+            )
+            if billed_quantity + current_invoice_quantity > receipt_line.quantity - returned_quantity:
                 raise PurchaseInvoicePostingError("Invoice allocation exceeds the unreturned, unbilled GRN quantity.")
 
         taxable_total += line.taxable_value
@@ -135,9 +141,3 @@ def post_purchase_invoice(*, tenant_id, invoice_id):
     invoice.save(update_fields=["status", "posted_at"])
     return invoice
 
-
-def allocated_quantity_for_receipt_line(allocations, receipt_line_id):
-    return sum(
-        (allocation.quantity for allocation in allocations if allocation.receipt_line_id == receipt_line_id),
-        Decimal("0"),
-    )
