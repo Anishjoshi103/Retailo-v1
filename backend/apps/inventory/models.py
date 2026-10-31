@@ -70,6 +70,7 @@ class PurchaseReceipt(TenantOwnedModel):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     branch = models.ForeignKey("tenancy.Branch", on_delete=models.PROTECT, related_name="purchase_receipts")
+    supplier = models.ForeignKey("Supplier", on_delete=models.PROTECT, null=True, blank=True, related_name="receipts")
     supplier_name = models.CharField(max_length=180)
     supplier_invoice_number = models.CharField(max_length=80, blank=True)
     idempotency_key = models.CharField(max_length=128)
