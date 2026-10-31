@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpParams } from '@angular/common/http';
 import { finalize } from 'rxjs';
@@ -25,7 +25,7 @@ interface Product {
   styleUrl: './catalog.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CatalogPage {
+export class CatalogPage implements OnInit {
   private readonly api = inject(ApiClient);
 
   readonly products = signal<readonly Product[]>([]);
@@ -34,7 +34,7 @@ export class CatalogPage {
   readonly loading = signal(false);
   readonly errorMessage = signal('');
 
-  constructor() {
+  ngOnInit(): void {
     this.loadProducts();
   }
 
