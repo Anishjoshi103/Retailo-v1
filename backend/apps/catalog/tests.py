@@ -7,7 +7,7 @@ from rest_framework.test import APIClient
 
 from apps.catalog.models import Product
 from apps.inventory.models import InventoryBalance, StockMovement
-from apps.tenancy.models import Branch, Membership, Tenant
+from apps.tenancy.models import Branch, BranchAccess, Membership, Tenant
 
 
 @override_settings(
@@ -24,6 +24,7 @@ class CatalogApiTests(TestCase):
         self.other_branch = Branch.objects.create(tenant=self.other_tenant, name="Main", code="MAIN")
         self.user = get_user_model().objects.create_user(username="owner@example.test", email="owner@example.test", password="Test-password-123")
         self.membership = Membership.objects.create(tenant=self.tenant, user=self.user, role=Membership.Role.OWNER)
+        BranchAccess.objects.create(membership=self.membership, branch=self.branch)
         from rest_framework_simplejwt.tokens import RefreshToken
         refresh = RefreshToken.for_user(self.user)
         refresh["tenant_id"] = str(self.tenant.id)
@@ -97,3 +98,15 @@ class CatalogApiTests(TestCase):
             movement.delete()
         with self.assertRaises(TypeError):
             StockMovement.objects.filter(pk=movement.pk).update(note="edited")
+
+
+    def test_stock_adjustment_rejects_unassigned_branch_in_same_tenant(self):
+        unassigned = Branch.objects.create(tenant=self.tenant, name="Back Room", code="BACK")
+        product = self.product()
+        response = self.client.post(
+            "/api/v1/inventory/adjustments",
+            {"branch_id": str(unassigned.id), "product_id": str(product.id), "quantity_delta": "1.000"},
+            format="json", HTTP_IDEMPOTENCY_KEY="unassigned-branch-adjustment",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(StockMovement.objects.count(), 0)
