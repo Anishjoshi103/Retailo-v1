@@ -3,7 +3,7 @@
 These helpers calculate tax only. They do not post stock, supplier balances, or accounting entries.
 """
 
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import TypedDict
 
 MONEY_QUANTUM = Decimal("0.01")
