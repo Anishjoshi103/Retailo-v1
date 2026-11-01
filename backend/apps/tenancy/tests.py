@@ -7,6 +7,41 @@ from django.test import TestCase
 from .models import Branch, Membership, Tenant
 
 
+class ActiveTenantMembershipTests(TestCase):
+    def setUp(self):
+        self.tenant = Tenant.objects.create(name="Store Cache", slug="store-cache")
+        self.user = get_user_model().objects.create_user(
+            username="cache@example.test", email="cache@example.test", password="not-a-real-password"
+        )
+        self.membership = Membership.objects.create(
+            tenant=self.tenant, user=self.user, role=Membership.Role.OWNER
+        )
+        self.request = SimpleNamespace(
+            user=self.user,
+            auth={"tenant_id": str(self.tenant.id), "membership_id": str(self.membership.id)},
+        )
+
+    def test_active_membership_is_resolved_once_per_request(self):
+        from apps.tenancy.permissions import active_tenant_membership
+
+        with self.assertNumQueries(1):
+            first = active_tenant_membership(self.request)
+            second = active_tenant_membership(self.request)
+
+        self.assertEqual(first.pk, self.membership.pk)
+        self.assertIs(first, second)
+
+    def test_inactive_membership_is_denied(self):
+        from rest_framework.exceptions import PermissionDenied
+
+        from apps.tenancy.permissions import active_tenant_membership
+
+        self.membership.is_active = False
+        self.membership.save(update_fields=["is_active"])
+        with self.assertRaises(PermissionDenied):
+            active_tenant_membership(self.request)
+
+
 class TenantIdentityTests(TestCase):
     def setUp(self):
         self.tenant_a = Tenant.objects.create(name="Store A", slug="store-a")
