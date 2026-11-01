@@ -79,7 +79,7 @@ class RegisterView(APIView):
         email = str(request.data.get("email", "")).strip().casefold()
         password = request.data.get("password", "")
         if not store_name or len(store_name) > 120 or "@" not in email or not isinstance(password, str) or len(password) < 12:
-            return Response(api_error_response(code="validation_error", message="Enter a valid store name, email, and password of at least 12 characters.", status_code=status.HTTP_400_BAD_REQUEST, request=request))
+            return api_error_response(code="validation_error", message="Enter a valid store name, email, and password of at least 12 characters.", status_code=status.HTTP_400_BAD_REQUEST, request=request)
         User = get_user_model()
         if User.objects.filter(email__iexact=email).exists():
             # Keep duplicate and new-address responses indistinguishable.
