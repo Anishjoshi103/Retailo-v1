@@ -6,7 +6,10 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.catalog.models import Product
-from apps.inventory.models import InventoryBalance, PurchaseReceipt, StockMovement, Supplier
+from apps.inventory.models import (
+    InventoryBalance, PurchaseReceipt, PurchaseReceiptLine, PurchaseReturn,
+    PurchaseReturnLine, StockMovement, Supplier,
+)
 from apps.tenancy.models import Branch, BranchAccess, Membership, Tenant
 
 
@@ -163,3 +166,52 @@ class PurchaseReceiptApiTests(TestCase):
         response = self.client.post("/api/v1/inventory/receipts", payload, format="json", HTTP_IDEMPOTENCY_KEY="receipt-unassigned-branch")
         self.assertEqual(response.status_code, 400)
         self.assertEqual(PurchaseReceipt.objects.count(), 0)
+
+
+    def test_posted_inventory_records_reject_queryset_update_and_delete(self):
+        self.client.post(
+            "/api/v1/inventory/receipts", self.payload(), format="json",
+            HTTP_IDEMPOTENCY_KEY="immutable-receipt",
+        )
+        receipt = PurchaseReceipt.objects.for_tenant(self.tenant.id).get()
+        receipt_line = PurchaseReceiptLine.objects.for_tenant(self.tenant.id).get()
+        movement = StockMovement.objects.for_tenant(self.tenant.id).get()
+
+        for queryset in (
+            StockMovement.objects.filter(pk=movement.pk),
+            PurchaseReceipt.objects.filter(pk=receipt.pk),
+            PurchaseReceiptLine.objects.filter(pk=receipt_line.pk),
+        ):
+            with self.subTest(model=queryset.model.__name__, operation="update"):
+                with self.assertRaises(TypeError):
+                    queryset.update(tenant_id=self.tenant.id)
+            with self.subTest(model=queryset.model.__name__, operation="delete"):
+                with self.assertRaises(TypeError):
+                    queryset.delete()
+
+    def test_posted_purchase_return_records_reject_queryset_update_and_delete(self):
+        receipt, receipt_line = self._post_receipt_for_return("immutable-return-receipt")
+        response = self.client.post(
+            "/api/v1/inventory/returns",
+            {
+                "receipt_id": str(receipt.id),
+                "reason": "Immutable test",
+                "lines": [{"receipt_line_id": str(receipt_line.id), "quantity": "1.000"}],
+            },
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="immutable-return",
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        return_record = PurchaseReturn.objects.for_tenant(self.tenant.id).get()
+        return_line = PurchaseReturnLine.objects.for_tenant(self.tenant.id).get()
+
+        for queryset in (
+            PurchaseReturn.objects.filter(pk=return_record.pk),
+            PurchaseReturnLine.objects.filter(pk=return_line.pk),
+        ):
+            with self.subTest(model=queryset.model.__name__, operation="update"):
+                with self.assertRaises(TypeError):
+                    queryset.update(tenant_id=self.tenant.id)
+            with self.subTest(model=queryset.model.__name__, operation="delete"):
+                with self.assertRaises(TypeError):
+                    queryset.delete()
