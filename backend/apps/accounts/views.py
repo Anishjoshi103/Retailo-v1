@@ -114,7 +114,7 @@ class VerifyEmailView(APIView):
             payload = signing.loads(token, salt=EMAIL_VERIFICATION_SALT, max_age=EMAIL_VERIFICATION_MAX_AGE)
             user = get_user_model().objects.get(pk=payload["user_id"], is_active=False)
         except (signing.BadSignature, signing.SignatureExpired, KeyError, TypeError, ValueError, get_user_model().DoesNotExist):
-            return Response(api_error_response(code="invalid_verification_token", message="Verification link is invalid or expired.", status_code=status.HTTP_400_BAD_REQUEST, request=request))
+            return api_error_response(code="invalid_verification_token", message="Verification link is invalid or expired.", status_code=status.HTTP_400_BAD_REQUEST, request=request)
         user.is_active = True
         user.save(update_fields=["is_active"])
         return Response({"detail": "Email verified. You can now sign in."}, status=status.HTTP_200_OK)
@@ -151,14 +151,14 @@ class PasswordResetConfirmView(APIView):
         token = request.data.get("token", "")
         password = request.data.get("password", "")
         if not isinstance(password, str) or len(password) < 12:
-            return Response(api_error_response(code="validation_error", message="Password must be at least 12 characters.", status_code=status.HTTP_400_BAD_REQUEST, request=request))
+            return api_error_response(code="validation_error", message="Password must be at least 12 characters.", status_code=status.HTTP_400_BAD_REQUEST, request=request)
         try:
             user_id = force_str(urlsafe_base64_decode(uid))
             user = get_user_model().objects.get(pk=user_id, is_active=True)
         except (ValueError, TypeError, get_user_model().DoesNotExist):
             user = None
         if user is None or not default_token_generator.check_token(user, token):
-            return Response(api_error_response(code="invalid_password_reset_token", message="Password reset link is invalid or expired.", status_code=status.HTTP_400_BAD_REQUEST, request=request))
+            return api_error_response(code="invalid_password_reset_token", message="Password reset link is invalid or expired.", status_code=status.HTTP_400_BAD_REQUEST, request=request)
         user.set_password(password)
         user.save(update_fields=["password"])
         return Response({"detail": "Password reset successfully. You can now sign in."}, status=status.HTTP_200_OK)
@@ -172,15 +172,15 @@ class LoginView(APIView):
         email = str(request.data.get("email", "")).strip().casefold()
         password = request.data.get("password", "")
         if not email or not isinstance(password, str) or not password:
-            return Response(api_error_response(code="invalid_credentials", message="Email or password is incorrect.", status_code=status.HTTP_401_UNAUTHORIZED, request=request))
+            return api_error_response(code="invalid_credentials", message="Email or password is incorrect.", status_code=status.HTTP_401_UNAUTHORIZED, request=request)
         User = get_user_model()
         user = User.objects.filter(email__iexact=email).order_by("pk").first()
         authenticated = authenticate(request, username=user.get_username(), password=password) if user else None
         if authenticated is None or not authenticated.is_active:
-            return Response(api_error_response(code="invalid_credentials", message="Email or password is incorrect.", status_code=status.HTTP_401_UNAUTHORIZED, request=request))
+            return api_error_response(code="invalid_credentials", message="Email or password is incorrect.", status_code=status.HTTP_401_UNAUTHORIZED, request=request)
         membership = Membership.objects.filter(user=authenticated, is_active=True, tenant__status="active").select_related("tenant").order_by("created_at", "id").first()
         if membership is None:
-            return Response(api_error_response(code="no_active_store", message="This account is not assigned to an active store.", status_code=status.HTTP_403_FORBIDDEN, request=request))
+            return api_error_response(code="no_active_store", message="This account is not assigned to an active store.", status_code=status.HTTP_403_FORBIDDEN, request=request)
         refresh = RefreshToken.for_user(authenticated)
         refresh["tenant_id"] = str(membership.tenant_id)
         refresh["membership_id"] = str(membership.id)
@@ -195,10 +195,10 @@ class RefreshView(APIView):
 
     def post(self, request):
         if not _origin_is_allowed(request):
-            return Response(api_error_response(code="origin_not_allowed", message="Origin is not allowed.", status_code=status.HTTP_403_FORBIDDEN, request=request))
+            return api_error_response(code="origin_not_allowed", message="Origin is not allowed.", status_code=status.HTTP_403_FORBIDDEN, request=request)
         raw_token = request.COOKIES.get(REFRESH_COOKIE)
         if not raw_token:
-            return Response(api_error_response(code="refresh_unavailable", message="Refresh session is unavailable.", status_code=status.HTTP_401_UNAUTHORIZED, request=request))
+            return api_error_response(code="refresh_unavailable", message="Refresh session is unavailable.", status_code=status.HTTP_401_UNAUTHORIZED, request=request)
         try:
             refresh = RefreshToken(raw_token)
             user_id = refresh.get("user_id")
@@ -219,7 +219,7 @@ class RefreshView(APIView):
                 return response
             return Response({"access": str(refresh.access_token)}, status=status.HTTP_200_OK)
         except (TokenError, KeyError, TypeError, ValueError):
-            response = Response(api_error_response(code="invalid_refresh_session", message="Refresh session is invalid or expired.", status_code=status.HTTP_401_UNAUTHORIZED, request=request))
+            response = api_error_response(code="invalid_refresh_session", message="Refresh session is invalid or expired.", status_code=status.HTTP_401_UNAUTHORIZED, request=request)
             _clear_refresh_cookie(response)
             return response
 
@@ -230,7 +230,7 @@ class LogoutView(APIView):
 
     def post(self, request):
         if not _origin_is_allowed(request):
-            return Response(api_error_response(code="origin_not_allowed", message="Origin is not allowed.", status_code=status.HTTP_403_FORBIDDEN, request=request))
+            return api_error_response(code="origin_not_allowed", message="Origin is not allowed.", status_code=status.HTTP_403_FORBIDDEN, request=request)
         raw_token = request.COOKIES.get(REFRESH_COOKIE)
         if raw_token:
             try:
@@ -250,7 +250,7 @@ class MeView(APIView):
         tenant_id = request.auth.get("tenant_id") if request.auth else None
         membership = Membership.objects.filter(pk=membership_id, tenant_id=tenant_id, user=request.user, is_active=True, tenant__status="active").select_related("tenant").first()
         if membership is None:
-            return Response(api_error_response(code="no_active_store", message="No active store membership.", status_code=status.HTTP_403_FORBIDDEN, request=request))
+            return api_error_response(code="no_active_store", message="No active store membership.", status_code=status.HTTP_403_FORBIDDEN, request=request)
         return Response({
             "id": str(request.user.pk),
             "email": request.user.email,
