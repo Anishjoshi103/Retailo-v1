@@ -6,9 +6,9 @@ from django.core import mail
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
-from .views import REFRESH_COOKIE
-
 from apps.tenancy.models import Branch, Membership, Tenant
+
+from .views import REFRESH_COOKIE
 
 
 @override_settings(
