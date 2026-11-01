@@ -257,3 +257,49 @@ class PurchaseReceiptApiTests(TestCase):
             InventoryBalance.objects.for_tenant(self.tenant.id).get().quantity_on_hand,
             Decimal("12.500"),
         )
+
+
+    def test_unique_key_race_replays_committed_supplier_return(self):
+        receipt, receipt_line = self._post_receipt_for_return("return-race-receipt")
+        payload = {
+            "receipt_id": str(receipt.id),
+            "reason": "Concurrent return",
+            "lines": [{"receipt_line_id": str(receipt_line.id), "quantity": "2.500"}],
+        }
+        original = self.client.post(
+            "/api/v1/inventory/returns", payload, format="json",
+            HTTP_IDEMPOTENCY_KEY="return-race-replay",
+        )
+        self.assertEqual(original.status_code, 201, original.content)
+        existing = PurchaseReturn.objects.for_tenant(self.tenant.id).get(
+            idempotency_key="return-race-replay"
+        )
+
+        first_lookup = MagicMock()
+        manager = PurchaseReturn.objects
+        with (
+            patch.object(
+                manager,
+                "for_tenant",
+                side_effect=[first_lookup, manager.for_tenant(self.tenant.id)],
+            ),
+            patch.object(manager, "create", side_effect=IntegrityError("unique race")),
+        ):
+            response = self.client.post(
+                "/api/v1/inventory/returns", payload, format="json",
+                HTTP_IDEMPOTENCY_KEY="return-race-replay",
+            )
+
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertTrue(response.json()["replayed"])
+        self.assertEqual(response.json()["id"], str(existing.id))
+        self.assertEqual(
+            InventoryBalance.objects.for_tenant(self.tenant.id).get().quantity_on_hand,
+            Decimal("10.000"),
+        )
+        self.assertEqual(
+            StockMovement.objects.for_tenant(self.tenant.id).filter(
+                reason=StockMovement.Reason.RETURN
+            ).count(),
+            1,
+        )
