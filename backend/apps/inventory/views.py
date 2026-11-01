@@ -1,12 +1,11 @@
 from django.db import IntegrityError, transaction
 from django.db.models import F
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import APIException, PermissionDenied
+from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.tenancy.models import Membership
-from apps.tenancy.permissions import active_tenant_membership
+from apps.tenancy.permissions import active_tenant_membership, require_membership_role
 
 from .models import InventoryBalance, StockMovement
 from .serializers import InventoryBalanceSerializer, StockAdjustmentSerializer
@@ -40,13 +39,12 @@ class StockAdjustmentView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        membership = active_tenant_membership(request)
+        membership = require_membership_role(
+            request, {"owner", "admin", "manager"},
+            "Store manager permissions are required to adjust stock.",
+        )
         tenant_id = membership.tenant_id
         membership_id = str(membership.pk)
-        if membership is None or membership.role not in {
-            Membership.Role.OWNER, Membership.Role.ADMIN, Membership.Role.MANAGER
-        }:
-            raise PermissionDenied("Store manager permissions are required to adjust stock.")
         key = request.headers.get("Idempotency-Key", "").strip()
         if not key or len(key) > 128:
             return Response({"detail": "A valid Idempotency-Key header is required."}, status=status.HTTP_400_BAD_REQUEST)
