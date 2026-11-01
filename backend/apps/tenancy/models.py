@@ -91,7 +91,7 @@ class BranchAccess(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["membership", "branch"], name="uq_branch_access_membership_branch")]
-        indexes = [models.Index(fields=["membership", "is_active"], name="ix_branch_access_membership_active")]
+        indexes = [models.Index(fields=["membership", "is_active"], name="ix_br_access_mem_active")]
 
     def __str__(self):
         return f"{self.membership_id}:{self.branch_id}"
