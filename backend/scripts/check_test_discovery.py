@@ -16,6 +16,7 @@ TEST_METHOD = re.compile(r"^\s*def test_[A-Za-z0-9_]+\s*\(", re.MULTILINE)
 
 
 def main() -> int:
+    sys.path.insert(0, str(BACKEND_ROOT))
     django.setup()
     missing_packages = [
         str(Path(app.path).relative_to(BACKEND_ROOT))
