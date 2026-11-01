@@ -6,6 +6,12 @@ exclude = ["migrations", ".venv"]
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I"]
 
+# Django settings intentionally inherit shared globals from base.py.
+[tool.ruff.lint.per-file-ignores]
+"config/settings/local.py" = ["F405"]
+"config/settings/production.py" = ["F405"]
+"config/settings/ci.py" = ["F405"]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
