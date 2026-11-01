@@ -9,7 +9,7 @@ from apps.tenancy.models import TenantOwnedModel, TenantQuerySet
 
 class ImmutableQuerySet(TenantQuerySet):
     def update(self, **kwargs):
-        raise TypeError("Stock movements are append-only.")
+        raise TypeError("This record is append-only.")
 
     def delete(self):
         raise TypeError("Stock movements are append-only.")
@@ -79,6 +79,7 @@ class PurchaseReceipt(TenantOwnedModel):
     request_hash = models.CharField(max_length=64)
     received_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    objects: ClassVar[models.Manager["PurchaseReceipt"]] = ImmutableQuerySet.as_manager()
 
     class Meta:
         ordering = ["-received_at", "-id"]
@@ -102,6 +103,7 @@ class PurchaseReceiptLine(TenantOwnedModel):
     product = models.ForeignKey("catalog.Product", on_delete=models.PROTECT, related_name="purchase_receipt_lines")
     quantity = models.DecimalField(max_digits=14, decimal_places=3)
     unit_cost = models.DecimalField(max_digits=12, decimal_places=2)
+    objects: ClassVar[models.Manager["PurchaseReceiptLine"]] = ImmutableQuerySet.as_manager()
 
     class Meta:
         constraints = [
@@ -158,6 +160,7 @@ class PurchaseReturn(TenantOwnedModel):
     request_hash = models.CharField(max_length=64)
     returned_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    objects: ClassVar[models.Manager["PurchaseReturn"]] = ImmutableQuerySet.as_manager()
 
     class Meta:
         ordering = ["-returned_at", "-id"]
@@ -181,6 +184,7 @@ class PurchaseReturnLine(TenantOwnedModel):
     receipt_line = models.ForeignKey(PurchaseReceiptLine, on_delete=models.PROTECT, related_name="return_lines")
     product = models.ForeignKey("catalog.Product", on_delete=models.PROTECT, related_name="purchase_return_lines")
     quantity = models.DecimalField(max_digits=14, decimal_places=3)
+    objects: ClassVar[models.Manager["PurchaseReturnLine"]] = ImmutableQuerySet.as_manager()
 
     class Meta:
         constraints = [models.CheckConstraint(condition=models.Q(quantity__gt=0), name="ck_purchase_return_qty_positive")]
