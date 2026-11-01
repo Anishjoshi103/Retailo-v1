@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.tenancy.models import Membership
+from apps.tenancy.permissions import active_tenant_membership
 
 from .models import (
     InventoryBalance,
@@ -19,7 +20,6 @@ from .models import (
 )
 from .models import PurchaseReturnLine as ReturnLine
 from .return_serializers import PurchaseReturnInputSerializer
-from .views import active_tenant_membership
 
 
 class PurchaseReturnCreateView(APIView):
