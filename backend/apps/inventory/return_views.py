@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.tenancy.models import Membership
+from apps.tenancy.permissions import active_tenant_membership
 
 from .models import (
     InventoryBalance,
@@ -19,17 +20,16 @@ from .models import (
 )
 from .models import PurchaseReturnLine as ReturnLine
 from .return_serializers import PurchaseReturnInputSerializer
-from .views import active_tenant_membership
 
 
 class PurchaseReturnCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        tenant_id = active_tenant_membership(request)
-        membership_id = request.auth.get("membership_id") if request.auth else None
-        membership = Membership.objects.filter(pk=membership_id, tenant_id=tenant_id, user=request.user, is_active=True).first()
-        if membership is None or membership.role not in {Membership.Role.OWNER, Membership.Role.ADMIN, Membership.Role.MANAGER}:
+        membership = active_tenant_membership(request)
+        tenant_id = membership.tenant_id
+        membership_id = str(membership.pk)
+        if membership.role not in {Membership.Role.OWNER, Membership.Role.ADMIN, Membership.Role.MANAGER}:
             raise PermissionDenied("Store manager permissions are required to return goods to a supplier.")
         key = request.headers.get("Idempotency-Key", "").strip()
         if not key or len(key) > 128:

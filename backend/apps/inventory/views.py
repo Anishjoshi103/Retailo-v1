@@ -6,20 +6,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.tenancy.models import Membership
+from apps.tenancy.permissions import active_tenant_membership
 
 from .models import InventoryBalance, StockMovement
 from .serializers import InventoryBalanceSerializer, StockAdjustmentSerializer
-
-
-def active_tenant_membership(request):
-    auth = request.auth
-    tenant_id = auth.get("tenant_id") if auth else None
-    membership_id = auth.get("membership_id") if auth else None
-    if not tenant_id or not membership_id or not Membership.objects.filter(
-        pk=membership_id, tenant_id=tenant_id, user=request.user, is_active=True, tenant__status="active"
-    ).exists():
-        raise PermissionDenied("An active store membership is required.")
-    return tenant_id
 
 
 class InventoryBalanceListView(generics.ListAPIView):
@@ -27,8 +17,9 @@ class InventoryBalanceListView(generics.ListAPIView):
     serializer_class = InventoryBalanceSerializer
 
     def get_queryset(self):
-        tenant_id = active_tenant_membership(self.request)
-        membership_id = self.request.auth.get("membership_id") if self.request.auth else None
+        membership = active_tenant_membership(self.request)
+        tenant_id = membership.tenant_id
+        membership_id = str(membership.pk)
         queryset = InventoryBalance.objects.for_tenant(tenant_id).filter(
             branch__membership_accesses__membership_id=membership_id,
             branch__membership_accesses__is_active=True,
@@ -49,11 +40,9 @@ class StockAdjustmentView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        tenant_id = active_tenant_membership(request)
-        membership_id = request.auth.get("membership_id") if request.auth else None
-        membership = Membership.objects.filter(
-            pk=membership_id, tenant_id=tenant_id, user=request.user, is_active=True
-        ).first()
+        membership = active_tenant_membership(request)
+        tenant_id = membership.tenant_id
+        membership_id = str(membership.pk)
         if membership is None or membership.role not in {
             Membership.Role.OWNER, Membership.Role.ADMIN, Membership.Role.MANAGER
         }:
