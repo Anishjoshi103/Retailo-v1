@@ -29,7 +29,6 @@ class ProductListCreateView(generics.ListCreateAPIView):
         return context
 
     def perform_create(self, serializer):
-        tenant_id = active_tenant_membership(self.request)
         membership = active_tenant_membership(self.request)
         tenant_id = membership.tenant_id
         if membership.role not in {
