@@ -20,6 +20,7 @@ export class SessionContextService {
   readonly tenantId = signal<string | null>(null);
   readonly branches = signal<readonly SessionBranch[]>([]);
   readonly selectedBranchId = signal<string | null>(null);
+  private readonly selectedBranchStorageKey = 'retailo.selectedBranchId';
   private get base(): string { return this.config.apiBaseUrl.replace(/\/$/, ''); }
 
   load(): Observable<boolean> {
@@ -39,18 +40,37 @@ export class SessionContextService {
         const allowed = this.user()?.allowed_branch_ids ?? [];
         const valid = items.filter((item) => allowed.includes(item.id));
         this.branches.set(valid);
+        const persisted = this.readPersistedBranchId();
         const current = this.selectedBranchId();
-        if (!current || !valid.some((item) => item.id === current)) this.selectedBranchId.set(valid[0]?.id ?? null);
+        const preferred = current && valid.some((item) => item.id === current) ? current : persisted;
+        const selected = preferred && valid.some((item) => item.id === preferred) ? preferred : valid[0]?.id ?? null;
+        this.selectedBranchId.set(selected);
+        this.persistBranchId(selected);
       }),
     );
   }
   selectBranch(id: string): boolean {
     if (!this.branches().some((item) => item.id === id)) return false;
     this.selectedBranchId.set(id);
+    this.persistBranchId(id);
     return true;
   }
   clear(): void {
     this.user.set(null); this.roles.set([]); this.tenantId.set(null);
     this.branches.set([]); this.selectedBranchId.set(null);
+    this.persistBranchId(null);
+  }
+
+  private readPersistedBranchId(): string | null {
+    try { return typeof localStorage === 'undefined' ? null : localStorage.getItem(this.selectedBranchStorageKey); }
+    catch { return null; }
+  }
+
+  private persistBranchId(id: string | null): void {
+    try {
+      if (typeof localStorage === 'undefined') return;
+      if (id) localStorage.setItem(this.selectedBranchStorageKey, id);
+      else localStorage.removeItem(this.selectedBranchStorageKey);
+    } catch { /* Storage may be unavailable; session state remains authoritative. */ }
   }
 }
