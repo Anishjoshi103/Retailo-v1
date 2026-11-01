@@ -8,7 +8,7 @@ export const routes: Routes = [
   { path: '', loadComponent: () => import('./layout/shell/shell.component').then((m) => m.ShellComponent), children: [
     { path: '', pathMatch: 'full', loadComponent: () => import('./features/home/home.page').then((m) => m.HomePage) },
     { path: 'catalog', canActivate: [authGuard, roleBranchGuard], data: { title: 'Catalog' }, loadComponent: () => import('./features/catalog/catalog.page').then((m) => m.CatalogPage) },
-    ...featurePaths.map((path) => ({ path, canActivate: [authGuard, roleBranchGuard], data: { title: featureTitle(path) }, loadComponent: () => import('./features/placeholder/feature-placeholder.page').then((m) => m.FeaturePlaceholderPage) }))
+    ...featurePaths.map((path) => ({ path, canActivate: [authGuard, roleBranchGuard], data: { title: featureTitle(path), ...(path === 'reports' ? { roles: ['owner', 'admin', 'manager'] } : {}), ...(path === 'settings' ? { roles: ['owner', 'admin'] } : {}) }, loadComponent: () => import('./features/placeholder/feature-placeholder.page').then((m) => m.FeaturePlaceholderPage) }))
   ] },
   { path: '**', redirectTo: '' }
 ];
