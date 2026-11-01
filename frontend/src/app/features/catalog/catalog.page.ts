@@ -46,7 +46,7 @@ export class CatalogPage implements OnInit {
     if (search) params = params.set('search', search);
     if (this.activeFilter() === 'active') params = params.set('active', 'true');
 
-    this.api.get<readonly Product[]>('/api/v1/products', { params })
+    this.api.get<readonly Product[]>('products', { params })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (products) => this.products.set(products),

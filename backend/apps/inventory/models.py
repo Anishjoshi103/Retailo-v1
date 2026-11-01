@@ -1,4 +1,5 @@
 import uuid
+from typing import ClassVar
 
 from django.conf import settings
 from django.db import models
@@ -33,7 +34,7 @@ class StockMovement(TenantOwnedModel):
     note = models.CharField(max_length=500, blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
-    objects = ImmutableQuerySet.as_manager()
+    objects: ClassVar[models.Manager["StockMovement"]] = ImmutableQuerySet.as_manager()
 
     class Meta:
         ordering = ["-created_at", "-id"]

@@ -12,9 +12,8 @@ from apps.inventory.models import (
     PurchaseInvoiceLine,
     PurchaseReceipt,
     PurchaseReceiptLine,
-    PurchaseInvoice,
-    Supplier,
     StockMovement,
+    Supplier,
 )
 from apps.inventory.purchase_invoice_services import (
     PurchaseInvoicePostingError,
