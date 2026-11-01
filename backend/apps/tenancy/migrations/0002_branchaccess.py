@@ -17,7 +17,6 @@ def grant_existing_memberships_all_tenant_branches(apps, schema_editor):
                 BranchAccess(membership_id=membership.id, branch_id=branch_id, is_active=True)
                 for branch_id in branch_ids
             ],
-            ignore_conflicts=True,
         )
 
 
