@@ -5,6 +5,7 @@ from .health import health
 
 urlpatterns = [
     path("api/v1/auth/", include("apps.accounts.urls")),
+    path("api/v1/branches", __import__("apps.accounts.views", fromlist=["BranchesView"]).BranchesView.as_view(), name="branches-list"),
     path("api/v1/", include("apps.catalog.urls")),
     path("api/v1/inventory/", include("apps.inventory.urls")),
     path("api/v1/inventory/", include("apps.inventory.purchase_urls")),
