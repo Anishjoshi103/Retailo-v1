@@ -13,6 +13,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.text import slugify
 from rest_framework import status
+from rest_framework.authentication import BaseAuthentication
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -71,7 +72,7 @@ def _send_account_email(*, subject, message, recipient):
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = []
+    authentication_classes: list[type[BaseAuthentication]] = []
 
     def post(self, request):
         store_name = str(request.data.get("store_name", "")).strip()
@@ -106,7 +107,7 @@ class RegisterView(APIView):
 
 class VerifyEmailView(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = []
+    authentication_classes: list[type[BaseAuthentication]] = []
 
     def post(self, request):
         token = request.data.get("token", "")
@@ -122,7 +123,7 @@ class VerifyEmailView(APIView):
 
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = []
+    authentication_classes: list[type[BaseAuthentication]] = []
 
     def post(self, request):
         email = str(request.data.get("email", "")).strip().casefold()
@@ -144,7 +145,7 @@ class PasswordResetRequestView(APIView):
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = []
+    authentication_classes: list[type[BaseAuthentication]] = []
 
     def post(self, request):
         uid = request.data.get("uid", "")
@@ -166,7 +167,7 @@ class PasswordResetConfirmView(APIView):
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = []
+    authentication_classes: list[type[BaseAuthentication]] = []
 
     def post(self, request):
         email = str(request.data.get("email", "")).strip().casefold()
@@ -191,7 +192,7 @@ class LoginView(APIView):
 
 class RefreshView(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = []
+    authentication_classes: list[type[BaseAuthentication]] = []
 
     def post(self, request):
         if not _origin_is_allowed(request):
@@ -226,7 +227,7 @@ class RefreshView(APIView):
 
 class LogoutView(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = []
+    authentication_classes: list[type[BaseAuthentication]] = []
 
     def post(self, request):
         if not _origin_is_allowed(request):
@@ -240,6 +241,22 @@ class LogoutView(APIView):
         response = Response(status=status.HTTP_204_NO_CONTENT)
         _clear_refresh_cookie(response)
         return response
+
+
+class BranchesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        tenant_id = request.auth.get("tenant_id") if request.auth else None
+        membership_id = request.auth.get("membership_id") if request.auth else None
+        membership = Membership.objects.filter(
+            pk=membership_id, tenant_id=tenant_id, user=request.user,
+            is_active=True, tenant__status="active",
+        ).first()
+        if membership is None:
+            return api_error_response(code="no_active_store", message="No active store membership.", status_code=status.HTTP_403_FORBIDDEN, request=request)
+        branches = Branch.objects.for_tenant(membership.tenant_id).filter(is_active=True).order_by("name", "id")
+        return Response([{"id": str(item.id), "name": item.name, "code": item.code} for item in branches])
 
 
 class MeView(APIView):
@@ -257,4 +274,5 @@ class MeView(APIView):
             "display_name": request.user.get_full_name() or request.user.get_username(),
             "tenant": {"id": str(membership.tenant_id), "name": membership.tenant.name},
             "role": membership.role,
+            "allowed_branch_ids": list(Branch.objects.for_tenant(membership.tenant_id).filter(is_active=True).order_by("name", "id").values_list("id", flat=True)),
         })

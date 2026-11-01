@@ -112,3 +112,30 @@ class AuthenticationApiTests(TestCase):
         self.assertTrue(self.user.check_password("Another-strong-password-456"))
         reused = self.client.post("/api/v1/auth/password-reset/confirm", {"uid": query["uid"][0], "token": query["token"][0], "password": "Yet-another-password-789"}, format="json")
         self.assertEqual(reused.status_code, 400)
+    def test_me_exposes_active_branch_context(self):
+        Branch.objects.create(tenant=self.tenant, name="Main", code="MAIN", is_active=True)
+        Branch.objects.create(tenant=self.tenant, name="Closed", code="CLOSED", is_active=False)
+        login = self.client.post(
+            "/api/v1/auth/login",
+            {"email": self.user.email, "password": "Strong-test-password-123"},
+            format="json",
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.json()['access']}")
+        response = self.client.get("/api/v1/auth/me")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["allowed_branch_ids"], [str(Branch.objects.get(tenant=self.tenant, code="MAIN").id)])
+
+    def test_branches_endpoint_returns_only_active_branches_for_authenticated_tenant(self):
+        main = Branch.objects.create(tenant=self.tenant, name="Main", code="MAIN", is_active=True)
+        Branch.objects.create(tenant=self.tenant, name="Closed", code="CLOSED", is_active=False)
+        other_tenant = Tenant.objects.create(name="Other Store", slug="other-store")
+        Branch.objects.create(tenant=other_tenant, name="Other", code="OTHER", is_active=True)
+        login = self.client.post(
+            "/api/v1/auth/login",
+            {"email": self.user.email, "password": "Strong-test-password-123"},
+            format="json",
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.json()['access']}")
+        response = self.client.get("/api/v1/branches")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item["id"] for item in response.json()], [str(main.id)])
