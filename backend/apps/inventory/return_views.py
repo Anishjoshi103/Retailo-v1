@@ -15,9 +15,9 @@ from .models import (
     PurchaseReceiptLine,
     PurchaseReturn,
     PurchaseReturnLine,
-    PurchaseReturnLine as ReturnLine,
     StockMovement,
 )
+from .models import PurchaseReturnLine as ReturnLine
 from .return_serializers import PurchaseReturnInputSerializer
 from .views import active_tenant_membership
 
