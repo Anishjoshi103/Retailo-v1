@@ -34,7 +34,7 @@ class StockMovement(TenantOwnedModel):
     note = models.CharField(max_length=500, blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
-    objects: ClassVar[models.Manager[StockMovement]] = ImmutableQuerySet.as_manager()
+    objects: ClassVar[models.Manager["StockMovement"]] = ImmutableQuerySet.as_manager()
 
     class Meta:
         ordering = ["-created_at", "-id"]
