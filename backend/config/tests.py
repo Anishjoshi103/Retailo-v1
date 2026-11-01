@@ -1,5 +1,6 @@
 from django.test import SimpleTestCase
 
+
 class HealthEndpointTests(SimpleTestCase):
     def test_health_returns_ok_without_database(self):
         from django.test import Client
