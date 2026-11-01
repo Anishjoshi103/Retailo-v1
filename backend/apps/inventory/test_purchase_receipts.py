@@ -7,8 +7,13 @@ from rest_framework.test import APIClient
 
 from apps.catalog.models import Product
 from apps.inventory.models import (
-    InventoryBalance, PurchaseReceipt, PurchaseReceiptLine, PurchaseReturn,
-    PurchaseReturnLine, StockMovement, Supplier,
+    InventoryBalance,
+    PurchaseReceipt,
+    PurchaseReceiptLine,
+    PurchaseReturn,
+    PurchaseReturnLine,
+    StockMovement,
+    Supplier,
 )
 from apps.tenancy.models import Branch, BranchAccess, Membership, Tenant
 
