@@ -46,7 +46,6 @@ class Membership(models.Model):
         OWNER = "owner", "Owner"
         ADMIN = "admin", "Administrator"
         MANAGER = "manager", "Manager"
-        ACCOUNTANT = "accountant", "Accountant"
         CASHIER = "cashier", "Cashier"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
