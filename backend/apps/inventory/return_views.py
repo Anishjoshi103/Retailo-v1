@@ -90,6 +90,18 @@ class PurchaseReturnCreateView(APIView):
                         note=f"Supplier return: {data['reason'].strip()}", created_by=request.user,
                     )
         except IntegrityError as exc:
+            # The competing request may have committed the same key after our
+            # initial lookup. Re-read only after the atomic block has rolled back.
+            prior = PurchaseReturn.objects.for_tenant(tenant_id).filter(
+                idempotency_key=key
+            ).first()
+            if prior is not None:
+                if prior.request_hash != request_hash:
+                    return Response(
+                        {"detail": "Idempotency-Key was already used for a different return."},
+                        status=status.HTTP_409_CONFLICT,
+                    )
+                return Response(self._response(prior, replayed=True), status=status.HTTP_200_OK)
             raise APIException("The return conflicted with another request. Retry with the same Idempotency-Key.") from exc
         return Response(self._response(return_record, replayed=False), status=status.HTTP_201_CREATED)
 
