@@ -1,9 +1,10 @@
-from rest_framework.exceptions import APIException, ErrorDetail
+from rest_framework.exceptions import APIException
+from rest_framework.response import Response
 from rest_framework.views import exception_handler
 
 
 def api_error_response(*, code, message, status_code, request=None, field_errors=None):
-    response = __import__("rest_framework.response", fromlist=["Response"]).Response(
+    response = Response(
         {"error": {
             "code": code,
             "message": message,
