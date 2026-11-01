@@ -2,6 +2,7 @@ from rest_framework import generics, permissions
 from rest_framework.exceptions import PermissionDenied
 
 from apps.tenancy.models import Membership
+
 from .models import Product
 from .serializers import ProductSerializer
 
