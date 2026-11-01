@@ -19,10 +19,10 @@ class PurchaseReceiptCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        tenant_id = active_tenant_membership(request)
-        membership_id = request.auth.get("membership_id") if request.auth else None
-        membership = Membership.objects.filter(pk=membership_id, tenant_id=tenant_id, user=request.user, is_active=True).first()
-        if membership is None or membership.role not in {Membership.Role.OWNER, Membership.Role.ADMIN, Membership.Role.MANAGER}:
+        membership = active_tenant_membership(request)
+        tenant_id = membership.tenant_id
+        membership_id = str(membership.pk)
+        if membership.role not in {Membership.Role.OWNER, Membership.Role.ADMIN, Membership.Role.MANAGER}:
             raise PermissionDenied("Store manager permissions are required to receive stock.")
         key = request.headers.get("Idempotency-Key", "").strip()
         if not key or len(key) > 128:
