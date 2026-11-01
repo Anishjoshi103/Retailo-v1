@@ -100,6 +100,24 @@ class CatalogApiTests(TestCase):
             StockMovement.objects.filter(pk=movement.pk).update(note="edited")
 
 
+    def test_inventory_balance_list_excludes_cross_tenant_branch_links(self):
+        # A malformed grant must not make another tenant's branch visible,
+        # even if legacy or corrupted data links that branch to this tenant's balance.
+        BranchAccess.objects.create(membership=self.membership, branch=self.other_branch)
+        product = self.product(sku="CROSS-BRANCH-1")
+        InventoryBalance.objects.create(
+            tenant=self.tenant,
+            branch=self.other_branch,
+            product=product,
+            quantity_on_hand=Decimal("7.000"),
+        )
+
+        response = self.client.get("/api/v1/inventory/balances")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [])
+
+
     def test_stock_adjustment_rejects_unassigned_branch_in_same_tenant(self):
         unassigned = Branch.objects.create(tenant=self.tenant, name="Back Room", code="BACK")
         product = self.product()
