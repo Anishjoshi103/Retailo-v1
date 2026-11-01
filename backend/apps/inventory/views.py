@@ -33,6 +33,7 @@ class InventoryBalanceListView(generics.ListAPIView):
             branch__membership_accesses__membership_id=membership_id,
             branch__membership_accesses__is_active=True,
             branch__membership_accesses__membership__is_active=True,
+            branch__tenant_id=tenant_id,
             branch__is_active=True,
         ).select_related("product", "branch").distinct()
         branch_id = self.request.query_params.get("branch_id")
