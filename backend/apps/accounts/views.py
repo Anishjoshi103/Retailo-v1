@@ -242,6 +242,22 @@ class LogoutView(APIView):
         return response
 
 
+class BranchesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        tenant_id = request.auth.get("tenant_id") if request.auth else None
+        membership_id = request.auth.get("membership_id") if request.auth else None
+        membership = Membership.objects.filter(
+            pk=membership_id, tenant_id=tenant_id, user=request.user,
+            is_active=True, tenant__status="active",
+        ).first()
+        if membership is None:
+            return api_error_response(code="no_active_store", message="No active store membership.", status_code=status.HTTP_403_FORBIDDEN, request=request)
+        branches = Branch.objects.for_tenant(membership.tenant_id).filter(is_active=True).order_by("name", "id")
+        return Response([{"id": str(item.id), "name": item.name, "code": item.code} for item in branches])
+
+
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -257,4 +273,5 @@ class MeView(APIView):
             "display_name": request.user.get_full_name() or request.user.get_username(),
             "tenant": {"id": str(membership.tenant_id), "name": membership.tenant.name},
             "role": membership.role,
+            "allowed_branch_ids": list(Branch.objects.for_tenant(membership.tenant_id).filter(is_active=True).order_by("name", "id").values_list("id", flat=True).values_list("id", flat=True)),
         })
