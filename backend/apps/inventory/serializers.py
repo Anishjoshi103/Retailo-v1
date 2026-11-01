@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.catalog.models import Product
 from apps.tenancy.models import Branch
-from .models import InventoryBalance, StockMovement
+from .models import InventoryBalance
 
 
 class InventoryBalanceSerializer(serializers.ModelSerializer):
