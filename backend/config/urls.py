@@ -1,8 +1,8 @@
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-from .health import health
 from apps.accounts.views import BranchesView
+from .health import health
 
 urlpatterns = [
     path("api/v1/auth/", include("apps.accounts.urls")),
