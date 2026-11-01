@@ -2,7 +2,7 @@ from django.test import SimpleTestCase
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIRequestFactory
 
-from config.api_errors import api_exception_handler, api_error_response
+from config.api_errors import api_error_response, api_exception_handler
 
 
 class ApiErrorEnvelopeTests(SimpleTestCase):
