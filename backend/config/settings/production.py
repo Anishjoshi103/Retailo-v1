@@ -1,4 +1,5 @@
 import os
+
 from .base import *  # noqa: F403
 
 if not SECRET_KEY:
