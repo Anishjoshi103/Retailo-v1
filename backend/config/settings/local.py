@@ -1,7 +1,7 @@
 import os
 
-from .base import SECRET_KEY
 from .base import *  # noqa: F403
+from .base import SECRET_KEY
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
 if not SECRET_KEY:
