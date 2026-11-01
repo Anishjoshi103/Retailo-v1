@@ -28,7 +28,7 @@ export class LoginPage {
     });
   }
   private messageFor(error:unknown):string {
-    if(error instanceof ApiError){if(error.status===0)return 'Unable to reach Retailo. Check your connection and try again.';if(error.status===401||error.code==='invalid_credentials')return 'Email or password is incorrect.';if(error.status===403||error.code==='no_active_membership')return 'Your account does not have an active store. Contact your store owner.';if(error.status===400)return error.message;if(error.status>=500)return 'Retailo is temporarily unavailable. Try again shortly.';}
+    if(error instanceof ApiError){if(error.status===0)return 'Unable to reach Retailo. Check your connection and try again.';if(error.status===401||error.code==='invalid_credentials')return 'Email or password is incorrect.';if(error.status===403||error.code==='no_active_store')return 'Your account does not have an active store. Contact your store owner.';if(error.status===400)return error.message;if(error.status>=500)return 'Retailo is temporarily unavailable. Try again shortly.';}
     return 'Sign-in failed. Please try again.';
   }
 }
