@@ -56,7 +56,17 @@ class AuthenticationApiTests(TestCase):
         invalid = self.client.post("/api/v1/auth/login", {"email": "owner@example.test", "password": "wrong-password"}, format="json")
         unknown = self.client.post("/api/v1/auth/login", {"email": "unknown@example.test", "password": "wrong-password"}, format="json")
         self.assertEqual(invalid.status_code, 401)
-        self.assertEqual(invalid.json(), unknown.json())
+        invalid_error = invalid.json()["error"].copy()
+        unknown_error = unknown.json()["error"].copy()
+        # Request IDs are intentionally unique per request; compare the public
+        # authentication error contract without this diagnostic field.
+        invalid_error.pop("request_id", None)
+        unknown_error.pop("request_id", None)
+        self.assertEqual(invalid_error, unknown_error)
+        self.assertNotEqual(
+            invalid.json()["error"]["request_id"],
+            unknown.json()["error"]["request_id"],
+        )
 
     def test_login_rejects_user_without_membership(self):
         orphan = get_user_model().objects.create_user(username="orphan@example.test", email="orphan@example.test", password="Strong-test-password-123")
