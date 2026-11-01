@@ -28,7 +28,13 @@ class InventoryBalanceListView(generics.ListAPIView):
 
     def get_queryset(self):
         tenant_id = active_tenant_membership(self.request)
-        queryset = InventoryBalance.objects.for_tenant(tenant_id).select_related("product", "branch")
+        membership_id = self.request.auth.get("membership_id") if self.request.auth else None
+        queryset = InventoryBalance.objects.for_tenant(tenant_id).filter(
+            branch__membership_accesses__membership_id=membership_id,
+            branch__membership_accesses__is_active=True,
+            branch__membership_accesses__membership__is_active=True,
+            branch__is_active=True,
+        ).select_related("product", "branch").distinct()
         branch_id = self.request.query_params.get("branch_id")
         product_id = self.request.query_params.get("product_id")
         if branch_id:
@@ -54,7 +60,7 @@ class StockAdjustmentView(APIView):
         key = request.headers.get("Idempotency-Key", "").strip()
         if not key or len(key) > 128:
             return Response({"detail": "A valid Idempotency-Key header is required."}, status=status.HTTP_400_BAD_REQUEST)
-        serializer = StockAdjustmentSerializer(data=request.data, context={"tenant_id": tenant_id})
+        serializer = StockAdjustmentSerializer(data=request.data, context={"tenant_id": tenant_id, "membership_id": membership_id})
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         try:

@@ -78,3 +78,20 @@ class Branch(TenantOwnedModel):
 
     def __str__(self):
         return f"{self.tenant_id}:{self.code} {self.name}"
+
+
+class BranchAccess(models.Model):
+    """Explicit access grant connecting a tenant membership to one branch."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    membership = models.ForeignKey(Membership, on_delete=models.CASCADE, related_name="branch_accesses")
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="membership_accesses")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["membership", "branch"], name="uq_branch_access_membership_branch")]
+        indexes = [models.Index(fields=["membership", "is_active"], name="ix_br_access_mem_active")]
+
+    def __str__(self):
+        return f"{self.membership_id}:{self.branch_id}"

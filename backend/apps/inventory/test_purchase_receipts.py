@@ -7,7 +7,7 @@ from rest_framework.test import APIClient
 
 from apps.catalog.models import Product
 from apps.inventory.models import InventoryBalance, PurchaseReceipt, StockMovement, Supplier
-from apps.tenancy.models import Branch, Membership, Tenant
+from apps.tenancy.models import Branch, BranchAccess, Membership, Tenant
 
 
 @override_settings(
@@ -23,6 +23,7 @@ class PurchaseReceiptApiTests(TestCase):
         self.other_branch = Branch.objects.create(tenant=self.other_tenant, name="Main", code="MAIN")
         self.user = get_user_model().objects.create_user(username="receipt-owner@example.test", email="receipt-owner@example.test", password="Test-password-123")
         self.membership = Membership.objects.create(tenant=self.tenant, user=self.user, role=Membership.Role.OWNER)
+        BranchAccess.objects.create(membership=self.membership, branch=self.branch)
         from rest_framework_simplejwt.tokens import RefreshToken
         refresh = RefreshToken.for_user(self.user)
         refresh["tenant_id"] = str(self.tenant.id)
@@ -152,4 +153,13 @@ class PurchaseReceiptApiTests(TestCase):
         self.membership.save(update_fields=["role"])
         response = self.client.post("/api/v1/inventory/receipts", self.payload(), format="json", HTTP_IDEMPOTENCY_KEY="receipt-cashier")
         self.assertEqual(response.status_code, 403)
+        self.assertEqual(PurchaseReceipt.objects.count(), 0)
+
+
+    def test_receipt_rejects_unassigned_branch_in_same_tenant(self):
+        unassigned = Branch.objects.create(tenant=self.tenant, name="Back Room", code="BACK")
+        payload = self.payload()
+        payload["branch_id"] = str(unassigned.id)
+        response = self.client.post("/api/v1/inventory/receipts", payload, format="json", HTTP_IDEMPOTENCY_KEY="receipt-unassigned-branch")
+        self.assertEqual(response.status_code, 400)
         self.assertEqual(PurchaseReceipt.objects.count(), 0)

@@ -27,7 +27,7 @@ class PurchaseReceiptCreateView(APIView):
         key = request.headers.get("Idempotency-Key", "").strip()
         if not key or len(key) > 128:
             return Response({"detail": "A valid Idempotency-Key header is required."}, status=status.HTTP_400_BAD_REQUEST)
-        serializer = PurchaseReceiptInputSerializer(data=request.data, context={"tenant_id": tenant_id})
+        serializer = PurchaseReceiptInputSerializer(data=request.data, context={"tenant_id": tenant_id, "membership_id": membership_id})
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         canonical = {

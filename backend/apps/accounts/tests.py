@@ -6,7 +6,7 @@ from django.core import mail
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
-from apps.tenancy.models import Branch, Membership, Tenant
+from apps.tenancy.models import Branch, BranchAccess, Membership, Tenant
 
 from .views import REFRESH_COOKIE
 
@@ -86,6 +86,7 @@ class AuthenticationApiTests(TestCase):
         self.assertEqual(membership.role, Membership.Role.OWNER)
         self.assertEqual(Branch.objects.filter(tenant=membership.tenant).count(), 1)
         self.assertEqual(Branch.objects.get(tenant=membership.tenant).code, "MAIN")
+        self.assertTrue(BranchAccess.objects.filter(membership=membership, branch__code="MAIN", is_active=True).exists())
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("/auth/verify-email?token=", mail.outbox[0].body)
 
@@ -113,7 +114,8 @@ class AuthenticationApiTests(TestCase):
         reused = self.client.post("/api/v1/auth/password-reset/confirm", {"uid": query["uid"][0], "token": query["token"][0], "password": "Yet-another-password-789"}, format="json")
         self.assertEqual(reused.status_code, 400)
     def test_me_exposes_active_branch_context(self):
-        Branch.objects.create(tenant=self.tenant, name="Main", code="MAIN", is_active=True)
+        main = Branch.objects.create(tenant=self.tenant, name="Main", code="MAIN", is_active=True)
+        BranchAccess.objects.create(membership=Membership.objects.get(tenant=self.tenant, user=self.user), branch=main)
         Branch.objects.create(tenant=self.tenant, name="Closed", code="CLOSED", is_active=False)
         login = self.client.post(
             "/api/v1/auth/login",
@@ -127,6 +129,7 @@ class AuthenticationApiTests(TestCase):
 
     def test_branches_endpoint_returns_only_active_branches_for_authenticated_tenant(self):
         main = Branch.objects.create(tenant=self.tenant, name="Main", code="MAIN", is_active=True)
+        BranchAccess.objects.create(membership=Membership.objects.get(tenant=self.tenant, user=self.user), branch=main)
         Branch.objects.create(tenant=self.tenant, name="Closed", code="CLOSED", is_active=False)
         other_tenant = Tenant.objects.create(name="Other Store", slug="other-store")
         Branch.objects.create(tenant=other_tenant, name="Other", code="OTHER", is_active=True)
@@ -139,3 +142,33 @@ class AuthenticationApiTests(TestCase):
         response = self.client.get("/api/v1/branches")
         self.assertEqual(response.status_code, 200)
         self.assertEqual([item["id"] for item in response.json()], [str(main.id)])
+
+
+    def test_branches_endpoint_excludes_ungranted_active_branch(self):
+        granted = Branch.objects.create(tenant=self.tenant, name="Granted", code="GRANTED", is_active=True)
+        Branch.objects.create(tenant=self.tenant, name="Unassigned", code="UNASSIGNED", is_active=True)
+        membership = Membership.objects.get(tenant=self.tenant, user=self.user)
+        BranchAccess.objects.create(membership=membership, branch=granted)
+        login = self.client.post(
+            "/api/v1/auth/login",
+            {"email": self.user.email, "password": "Strong-test-password-123"},
+            format="json",
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.json()['access']}")
+        response = self.client.get("/api/v1/branches")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item["id"] for item in response.json()], [str(granted.id)])
+
+    def test_revoked_branch_grant_is_not_returned_by_me(self):
+        branch = Branch.objects.create(tenant=self.tenant, name="Main", code="MAIN", is_active=True)
+        membership = Membership.objects.get(tenant=self.tenant, user=self.user)
+        BranchAccess.objects.create(membership=membership, branch=branch, is_active=False)
+        login = self.client.post(
+            "/api/v1/auth/login",
+            {"email": self.user.email, "password": "Strong-test-password-123"},
+            format="json",
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.json()['access']}")
+        response = self.client.get("/api/v1/auth/me")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["allowed_branch_ids"], [])

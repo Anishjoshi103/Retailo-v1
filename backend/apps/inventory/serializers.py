@@ -1,7 +1,8 @@
 from rest_framework import serializers
 
 from apps.catalog.models import Product
-from apps.tenancy.models import Branch
+from apps.tenancy.access import membership_can_access_branch
+from apps.tenancy.models import Branch, Membership
 
 from .models import InventoryBalance
 
@@ -31,7 +32,10 @@ class StockAdjustmentSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         tenant_id = self.context["tenant_id"]
+        membership = Membership.objects.filter(pk=self.context["membership_id"], tenant_id=tenant_id, is_active=True, tenant__status="active").first()
         branch = Branch.objects.for_tenant(tenant_id).filter(pk=attrs["branch_id"], is_active=True).first()
+        if membership is None or not membership_can_access_branch(membership, attrs["branch_id"]):
+            raise serializers.ValidationError({"branch_id": "Select a branch assigned to your membership."})
         product = Product.objects.for_tenant(tenant_id).filter(pk=attrs["product_id"], is_active=True).first()
         if branch is None or product is None:
             raise serializers.ValidationError("Select an active branch and product in your store.")
