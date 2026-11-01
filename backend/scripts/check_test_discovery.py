@@ -1,8 +1,8 @@
 """Fail CI if Django silently skips test modules or test methods."""
 
-from pathlib import Path
 import re
 import sys
+from pathlib import Path
 
 import django
 from django.apps import apps
