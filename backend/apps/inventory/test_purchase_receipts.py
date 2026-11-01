@@ -276,6 +276,7 @@ class PurchaseReceiptApiTests(TestCase):
         )
 
         first_lookup = MagicMock()
+        first_lookup.filter.return_value.first.return_value = None
         manager = PurchaseReturn.objects
         with (
             patch.object(
