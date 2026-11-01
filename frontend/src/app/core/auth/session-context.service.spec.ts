@@ -9,8 +9,9 @@ import { SessionContextService } from './session-context.service';
 describe('SessionContextService', () => {
   let http: HttpTestingController;
   let context: SessionContextService;
-  afterEach(() => http.verify());
-  it('loads role, tenant, and only branches allowed by /auth/me', () => {
+  afterEach(() => { http.verify(); localStorage.removeItem('retailo.selectedBranchId'); });
+  it('restores a persisted branch only when the user is authorized for it', () => {
+    localStorage.setItem('retailo.selectedBranchId', 'b2');
     TestBed.configureTestingModule({ providers: [
       provideHttpClient(), provideHttpClientTesting(),
       { provide: APP_CONFIG, useValue: { apiBaseUrl: '/api/v1' } },
@@ -32,5 +33,12 @@ describe('SessionContextService', () => {
     expect(context.tenantId()).toBe('t1');
     expect(context.branches().map((branch) => branch.id)).toEqual(['b1']);
     expect(context.selectedBranchId()).toBe('b1');
+    expect(localStorage.getItem('retailo.selectedBranchId')).toBe('b1');
+    expect(context.selectBranch('b2')).toBe(false);
+    expect(localStorage.getItem('retailo.selectedBranchId')).toBe('b1');
+    expect(context.selectBranch('b1')).toBe(true);
+    expect(localStorage.getItem('retailo.selectedBranchId')).toBe('b1');
+    context.clear();
+    expect(localStorage.getItem('retailo.selectedBranchId')).toBeNull();
   });
 });
