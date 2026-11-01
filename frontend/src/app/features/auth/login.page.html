@@ -4,6 +4,6 @@
 <label for="email">Work email</label><input id="email" type="email" formControlName="email" autocomplete="username" inputmode="email" [attr.aria-invalid]="form.controls.email.touched && form.controls.email.invalid" [attr.aria-describedby]="form.controls.email.touched && form.controls.email.invalid ? 'email-error' : null">
 @if(form.controls.email.touched && form.controls.email.invalid){<small id="email-error" class="field-error">Enter a valid email address.</small>}
 <label for="password">Password</label><input id="password" type="password" formControlName="password" autocomplete="current-password" [attr.aria-invalid]="form.controls.password.touched && form.controls.password.invalid" [attr.aria-describedby]="form.controls.password.touched && form.controls.password.invalid ? 'password-error' : null">
-@if(form.controls.password.touched && form.controls.password.invalid){<small id="password-error" class="field-error">Password must contain at least 8 characters.</small>}
+@if(form.controls.password.touched && form.controls.password.invalid){<small id="password-error" class="field-error">Password must contain at least 12 characters.</small>}
 <button type="submit" [disabled]="submitting()">{{submitting()?'Signing in…':'Sign in'}}</button>
 </form><p class="auth-links"><a routerLink="/auth/password-recovery">Forgot password?</a><span>New to Retailo? <a routerLink="/auth/register">Create a workspace</a></span></p><p class="security-note">Your access is protected by your store’s account permissions.</p></section></main>
