@@ -20,7 +20,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.tenancy.models import Branch, Membership, Tenant
+from apps.tenancy.access import authorized_branches
+from apps.tenancy.models import Branch, BranchAccess, Membership, Tenant
 from config.api_errors import api_error_response
 
 logger = logging.getLogger(__name__)
@@ -91,7 +92,8 @@ class RegisterView(APIView):
                 slug = f"{base_slug}-{uuid.uuid4().hex[:10]}"
                 tenant = Tenant.objects.create(name=store_name, slug=slug)
                 Membership.objects.create(tenant=tenant, user=user, role=Membership.Role.OWNER, is_active=True)
-                Branch.objects.create(tenant=tenant, name="Main Branch", code="MAIN", is_active=True)
+                branch = Branch.objects.create(tenant=tenant, name="Main Branch", code="MAIN", is_active=True)
+                BranchAccess.objects.create(membership=Membership.objects.get(tenant=tenant, user=user), branch=branch)
                 token = signing.dumps({"user_id": str(user.pk)}, salt=EMAIL_VERIFICATION_SALT)
                 verify_url = _frontend_url("/auth/verify-email", {"token": token})
                 _send_account_email(
@@ -255,7 +257,7 @@ class BranchesView(APIView):
         ).first()
         if membership is None:
             return api_error_response(code="no_active_store", message="No active store membership.", status_code=status.HTTP_403_FORBIDDEN, request=request)
-        branches = Branch.objects.for_tenant(membership.tenant_id).filter(is_active=True).order_by("name", "id")
+        branches = authorized_branches(membership).order_by("name", "id")
         return Response([{"id": str(item.id), "name": item.name, "code": item.code} for item in branches])
 
 
@@ -274,5 +276,5 @@ class MeView(APIView):
             "display_name": request.user.get_full_name() or request.user.get_username(),
             "tenant": {"id": str(membership.tenant_id), "name": membership.tenant.name},
             "role": membership.role,
-            "allowed_branch_ids": list(Branch.objects.for_tenant(membership.tenant_id).filter(is_active=True).order_by("name", "id").values_list("id", flat=True)),
+            "allowed_branch_ids": list(authorized_branches(membership).order_by("name", "id").values_list("id", flat=True)),
         })
