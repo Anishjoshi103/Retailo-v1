@@ -162,7 +162,7 @@ class AuthenticationApiTests(TestCase):
     def test_revoked_branch_grant_is_not_returned_by_me(self):
         branch = Branch.objects.create(tenant=self.tenant, name="Main", code="MAIN", is_active=True)
         membership = Membership.objects.get(tenant=self.tenant, user=self.user)
-        grant = BranchAccess.objects.create(membership=membership, branch=branch, is_active=False)
+        BranchAccess.objects.create(membership=membership, branch=branch, is_active=False)
         login = self.client.post(
             "/api/v1/auth/login",
             {"email": self.user.email, "password": "Strong-test-password-123"},
