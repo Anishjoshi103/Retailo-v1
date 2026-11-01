@@ -10,7 +10,14 @@ from rest_framework.views import APIView
 
 from apps.tenancy.models import Membership
 
-from .models import InventoryBalance, PurchaseReturn, PurchaseReturnLine, PurchaseReturnLine as ReturnLine, PurchaseReceiptLine, StockMovement
+from .models import (
+    InventoryBalance,
+    PurchaseReceiptLine,
+    PurchaseReturn,
+    PurchaseReturnLine,
+    PurchaseReturnLine as ReturnLine,
+    StockMovement,
+)
 from .return_serializers import PurchaseReturnInputSerializer
 from .views import active_tenant_membership
 
