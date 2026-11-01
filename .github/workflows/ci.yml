@@ -73,7 +73,6 @@ jobs:
   frontend:
     name: Frontend lint, tests, and build
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('frontend/package.json') != '' && hashFiles('frontend/package-lock.json') != '' }}
     defaults:
       run:
         working-directory: frontend
@@ -81,7 +80,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Explain frontend CI skip when lockfile is absent
+        if: ${{ hashFiles('frontend/package.json') == '' || hashFiles('frontend/package-lock.json') == '' }}
+        run: echo "Skipping frontend checks because frontend/package.json or frontend/package-lock.json is missing. Commit the npm lockfile to enable these checks."
+
       - name: Set up Node.js
+        if: ${{ hashFiles('frontend/package.json') != '' && hashFiles('frontend/package-lock.json') != '' }}
         uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -89,15 +93,19 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
+        if: ${{ hashFiles('frontend/package.json') != '' && hashFiles('frontend/package-lock.json') != '' }}
         run: npm ci
 
       - name: Lint
+        if: ${{ hashFiles('frontend/package.json') != '' && hashFiles('frontend/package-lock.json') != '' }}
         run: npm run lint --if-present
 
       - name: Test
+        if: ${{ hashFiles('frontend/package.json') != '' && hashFiles('frontend/package-lock.json') != '' }}
         run: npm test -- --watch=false
         env:
           CI: "true"
 
       - name: Build
+        if: ${{ hashFiles('frontend/package.json') != '' && hashFiles('frontend/package-lock.json') != '' }}
         run: npm run build
