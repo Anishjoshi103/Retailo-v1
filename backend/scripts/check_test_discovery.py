@@ -1,5 +1,7 @@
 """Fail CI if Django silently skips test modules or test methods."""
 
+# ruff: noqa: I001 -- CI utility import block is deliberately kept stable.
+
 import re
 import sys
 from pathlib import Path
