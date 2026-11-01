@@ -8,7 +8,7 @@ from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.tenancy.permissions import active_tenant_membership, require_membership_role
+from apps.tenancy.permissions import require_membership_role
 
 from .models import InventoryBalance, PurchaseReceipt, PurchaseReceiptLine, StockMovement
 from .purchase_serializers import PurchaseReceiptInputSerializer
