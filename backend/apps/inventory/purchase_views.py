@@ -66,6 +66,16 @@ class PurchaseReceiptCreateView(APIView):
                         idempotency_key=f"receipt:{receipt.id}:{line['product'].id}", note=f"Goods received from {data['supplier_name']}", created_by=request.user,
                     )
         except IntegrityError as exc:
+            # The competing transaction may have committed the same key after our
+            # initial lookup. Re-read outside the failed atomic block before deciding.
+            prior = PurchaseReceipt.objects.for_tenant(tenant_id).filter(idempotency_key=key).first()
+            if prior is not None:
+                if prior.request_hash != request_hash:
+                    return Response(
+                        {"detail": "Idempotency-Key was already used for a different receipt."},
+                        status=status.HTTP_409_CONFLICT,
+                    )
+                return Response(self._response(prior, replayed=True), status=status.HTTP_200_OK)
             raise APIException("The receipt conflicted with another request. Retry with the same Idempotency-Key.") from exc
         return Response(self._response(receipt, replayed=False), status=status.HTTP_201_CREATED)
 

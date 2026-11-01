@@ -1,7 +1,9 @@
 from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
@@ -220,3 +222,38 @@ class PurchaseReceiptApiTests(TestCase):
             with self.subTest(model=queryset.model.__name__, operation="delete"):
                 with self.assertRaises(TypeError):
                     queryset.delete()
+
+
+    def test_unique_key_race_replays_committed_receipt(self):
+        original = self.client.post(
+            "/api/v1/inventory/receipts", self.payload(), format="json",
+            HTTP_IDEMPOTENCY_KEY="receipt-race-replay",
+        )
+        self.assertEqual(original.status_code, 201, original.content)
+        existing = PurchaseReceipt.objects.for_tenant(self.tenant.id).get(
+            idempotency_key="receipt-race-replay"
+        )
+
+        first_lookup = MagicMock()
+        first_lookup.filter.return_value.first.return_value = None
+        actual_lookup = PurchaseReceipt.objects
+        with (
+            patch.object(
+                PurchaseReceipt.objects,
+                "for_tenant",
+                side_effect=[first_lookup, actual_lookup.for_tenant(self.tenant.id)],
+            ),
+            patch.object(PurchaseReceipt.objects, "create", side_effect=IntegrityError("unique race")),
+        ):
+            response = self.client.post(
+                "/api/v1/inventory/receipts", self.payload(), format="json",
+                HTTP_IDEMPOTENCY_KEY="receipt-race-replay",
+            )
+
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertTrue(response.json()["replayed"])
+        self.assertEqual(response.json()["id"], str(existing.id))
+        self.assertEqual(
+            InventoryBalance.objects.for_tenant(self.tenant.id).get().quantity_on_hand,
+            Decimal("12.500"),
+        )
