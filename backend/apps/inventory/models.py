@@ -234,8 +234,8 @@ class PurchaseInvoice(TenantOwnedModel):
             ),
         ]
         indexes = [
-            models.Index(fields=["tenant", "supplier", "invoice_date"], name="ix_purchase_invoice_supplier_date"),
-            models.Index(fields=["tenant", "branch", "status"], name="ix_purchase_invoice_branch_status"),
+            models.Index(fields=["tenant", "supplier", "invoice_date"], name="ix_pi_supplier_date"),
+            models.Index(fields=["tenant", "branch", "status"], name="ix_pi_branch_status"),
         ]
 
     def save(self, *args, **kwargs):
@@ -311,7 +311,7 @@ class PurchaseInvoiceAllocation(TenantOwnedModel):
             models.UniqueConstraint(fields=["invoice_line", "receipt_line"], name="uq_invoice_line_grn_line"),
         ]
         indexes = [
-            models.Index(fields=["tenant", "receipt_line"], name="ix_invoice_alloc_tenant_grn_line"),
+            models.Index(fields=["tenant", "receipt_line"], name="ix_ia_tenant_grn_line"),
         ]
 
     def save(self, *args, **kwargs):
