@@ -31,3 +31,11 @@ def active_tenant_membership(request) -> Membership:
 
     setattr(request, "_retailo_active_membership", membership)
     return membership
+
+
+def require_membership_role(request, allowed_roles: set[str], message: str = "You do not have permission to perform this action.") -> Membership:
+    """Resolve the active tenant membership and enforce its role allowlist."""
+    membership = active_tenant_membership(request)
+    if membership.role not in allowed_roles:
+        raise PermissionDenied(message)
+    return membership
