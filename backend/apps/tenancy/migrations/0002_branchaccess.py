@@ -40,7 +40,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="branchaccess",
-            index=models.Index(fields=["membership", "is_active"], name="ix_branch_access_membership_active"),
+            index=models.Index(fields=["membership", "is_active"], name="ix_br_access_mem_active"),
         ),
         migrations.RunPython(grant_existing_memberships_all_tenant_branches, migrations.RunPython.noop),
     ]
