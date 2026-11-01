@@ -1,8 +1,5 @@
 from rest_framework import generics, permissions
-from rest_framework.exceptions import PermissionDenied
-
-from apps.tenancy.models import Membership
-from apps.tenancy.permissions import active_tenant_membership
+from apps.tenancy.permissions import active_tenant_membership, require_membership_role
 
 from .models import Supplier
 from .supplier_serializers import SupplierSerializer
@@ -32,8 +29,9 @@ class SupplierListCreateView(generics.ListCreateAPIView):
         return context
 
     def perform_create(self, serializer):
-        membership = active_tenant_membership(self.request)
+        membership = require_membership_role(
+            self.request, {"owner", "admin", "manager"},
+            "Store manager permissions are required to create suppliers.",
+        )
         tenant_id = membership.tenant_id
-        if membership.role not in {Membership.Role.OWNER, Membership.Role.ADMIN, Membership.Role.MANAGER}:
-            raise PermissionDenied("Store manager permissions are required to create suppliers.")
         serializer.save(tenant_id=tenant_id)
