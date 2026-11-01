@@ -57,10 +57,17 @@ jobs:
           DJANGO_SETTINGS_MODULE: config.settings.ci
         run: python manage.py check
 
-      - name: Unit tests
+      - name: Guard Django test discovery
         env:
           DJANGO_SETTINGS_MODULE: config.settings.ci
-        run: python manage.py test
+        run: python scripts/check_test_discovery.py
+
+      - name: Unit tests with coverage
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.ci
+        run: |
+          coverage run --source=apps,config manage.py test
+          coverage report --show-missing
 
       - name: Check for uncommitted model migrations
         env:
