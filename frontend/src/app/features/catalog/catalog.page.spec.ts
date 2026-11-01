@@ -25,7 +25,7 @@ describe('CatalogPage', () => {
 
   it('loads products from the tenant-scoped API endpoint', () => {
     fixture.detectChanges();
-    expect(api.get).toHaveBeenCalledWith('/api/v1/products', expect.objectContaining({ params: expect.any(HttpParams) }));
+    expect(api.get).toHaveBeenCalledWith('products', expect.objectContaining({ params: expect.any(HttpParams) }));
     expect(fixture.nativeElement.textContent).toContain('No products found');
   });
 
