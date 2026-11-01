@@ -12,7 +12,6 @@ from apps.inventory.models import (
     PurchaseInvoiceLine,
     PurchaseReceipt,
     PurchaseReceiptLine,
-    PurchaseInvoice,
     Supplier,
     StockMovement,
 )
