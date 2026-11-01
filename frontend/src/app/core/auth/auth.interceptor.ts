@@ -6,7 +6,7 @@ import { APP_CONFIG } from '../config/app-config.token';
 import { SessionService } from './session.service';
 
 function isAuthEndpoint(url: string): boolean {
-  return /\/auth\/(login|register|refresh|logout|password-reset)(?:[/?#]|$)/i.test(url);
+  return /\/auth\/(login|register|verify-email|refresh|logout|password-reset)(?:[/?#]|$)/i.test(url);
 }
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
