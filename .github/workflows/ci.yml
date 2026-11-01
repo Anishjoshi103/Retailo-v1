@@ -67,7 +67,7 @@ jobs:
           DJANGO_SETTINGS_MODULE: config.settings.ci
         run: |
           coverage run --source=apps,config manage.py test
-          coverage report --show-missing
+          coverage report --show-missing --fail-under=90
 
       - name: Check for uncommitted model migrations
         env:
