@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { APP_CONFIG } from '../../core/config/app-config.token';
 import { SessionService } from '../../core/auth/session.service';
 import { ApiError } from '../../core/api/api-error.model';
+import { SessionContextService } from '../../core/auth/session-context.service';
 
 interface LoginResponse { readonly access: string; }
 @Component({ selector:'retailo-login-page', standalone:true, imports:[ReactiveFormsModule,RouterLink], templateUrl:'./login.page.html', styleUrl:'./login.page.scss', changeDetection:ChangeDetectionStrategy.OnPush })
@@ -13,6 +14,7 @@ export class LoginPage {
   private readonly http=inject(HttpClient);
   private readonly config=inject(APP_CONFIG);
   private readonly session=inject(SessionService);
+  private readonly sessionContext=inject(SessionContextService);
   private readonly router=inject(Router);
   private readonly route=inject(ActivatedRoute);
   readonly submitting=signal(false);
@@ -23,7 +25,7 @@ export class LoginPage {
     this.submitting.set(true);this.errorMessage.set('');
     const base=this.config.apiBaseUrl.replace(/\/$/,'');
     this.http.post<LoginResponse>(base+'/auth/login',this.form.getRawValue(),{withCredentials:true}).subscribe({
-      next:(response)=>{if(!response.access){this.errorMessage.set('The server returned an invalid sign-in response.');this.submitting.set(false);return;}this.session.setAccessToken(response.access);const candidate=this.route.snapshot.queryParamMap.get('returnUrl');const returnUrl=candidate?.startsWith('/')&&!candidate.startsWith('//')?candidate:'/';void this.router.navigateByUrl(returnUrl);this.submitting.set(false);},
+      next:(response)=>{if(!response.access){this.errorMessage.set('The server returned an invalid sign-in response.');this.submitting.set(false);return;}this.session.setAccessToken(response.access);this.sessionContext.load().subscribe((loaded)=>{if(loaded)this.sessionContext.loadBranches().subscribe();});const candidate=this.route.snapshot.queryParamMap.get('returnUrl');const returnUrl=candidate?.startsWith('/')&&!candidate.startsWith('//')?candidate:'/';void this.router.navigateByUrl(returnUrl);this.submitting.set(false);},
       error:(error:unknown)=>{this.errorMessage.set(this.messageFor(error));this.submitting.set(false);}
     });
   }
