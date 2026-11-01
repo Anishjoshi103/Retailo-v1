@@ -128,3 +128,24 @@ class CatalogApiTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(StockMovement.objects.count(), 0)
+
+
+    def test_inventory_balance_branch_filter_cannot_select_unassigned_branch(self):
+        product = self.product(sku="BRANCH-FILTER-1")
+        unassigned = Branch.objects.create(tenant=self.tenant, name="Back Room", code="BACK")
+        InventoryBalance.objects.create(
+            tenant=self.tenant, branch=self.branch, product=product,
+            quantity_on_hand=Decimal("4.000"),
+        )
+        InventoryBalance.objects.create(
+            tenant=self.tenant, branch=unassigned, product=product,
+            quantity_on_hand=Decimal("9.000"),
+        )
+
+        response = self.client.get(
+            "/api/v1/inventory/balances",
+            {"branch_id": str(unassigned.id)},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [])
