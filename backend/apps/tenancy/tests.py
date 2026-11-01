@@ -75,3 +75,47 @@ class TenantIdentityTests(TestCase):
     def test_tenant_ids_are_uuid_values(self):
         self.assertNotEqual(self.tenant_a.id, self.tenant_b.id)
         self.assertIsInstance(self.tenant_a.id, uuid.UUID)
+
+
+class MembershipRoleAuthorizationTests(TestCase):
+    def setUp(self):
+        self.tenant = Tenant.objects.create(name="Role Store", slug="role-store")
+        self.user = get_user_model().objects.create_user(
+            username="roles@example.test", email="roles@example.test", password="not-a-real-password"
+        )
+        self.membership = Membership.objects.create(
+            tenant=self.tenant, user=self.user, role=Membership.Role.OWNER
+        )
+        self.request = SimpleNamespace(
+            user=self.user,
+            auth={"tenant_id": str(self.tenant.id), "membership_id": str(self.membership.id)},
+        )
+
+    def test_role_guard_returns_membership_for_allowed_role(self):
+        from apps.tenancy.permissions import require_membership_role
+
+        result = require_membership_role(
+            self.request, {Membership.Role.OWNER, Membership.Role.ADMIN}
+        )
+
+        self.assertEqual(result.pk, self.membership.pk)
+
+    def test_role_guard_denies_role_not_in_allowlist(self):
+        from rest_framework.exceptions import PermissionDenied
+
+        from apps.tenancy.permissions import require_membership_role
+
+        self.membership.role = Membership.Role.CASHIER
+        self.membership.save(update_fields=["role"])
+
+        with self.assertRaises(PermissionDenied):
+            require_membership_role(
+                self.request, {Membership.Role.OWNER, Membership.Role.ADMIN, Membership.Role.MANAGER}
+            )
+
+    def test_role_guard_uses_active_membership_resolver(self):
+        from apps.tenancy.permissions import require_membership_role
+
+        with self.assertNumQueries(1):
+            require_membership_role(self.request, {Membership.Role.OWNER})
+            require_membership_role(self.request, {Membership.Role.OWNER})
