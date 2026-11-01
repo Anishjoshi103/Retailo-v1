@@ -29,5 +29,5 @@ def active_tenant_membership(request) -> Membership:
     if membership is None:
         raise PermissionDenied("An active store membership is required.")
 
-    request._retailo_active_membership = membership
+    setattr(request, "_retailo_active_membership", membership)
     return membership
