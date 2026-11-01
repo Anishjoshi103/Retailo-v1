@@ -1,7 +1,5 @@
 """Fail CI if Django silently skips test modules or test methods."""
 
-from __future__ import annotations
-
 import re
 import sys
 from pathlib import Path
