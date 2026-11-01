@@ -273,5 +273,5 @@ class MeView(APIView):
             "display_name": request.user.get_full_name() or request.user.get_username(),
             "tenant": {"id": str(membership.tenant_id), "name": membership.tenant.name},
             "role": membership.role,
-            "allowed_branch_ids": list(Branch.objects.for_tenant(membership.tenant_id).filter(is_active=True).order_by("name", "id").values_list("id", flat=True).values_list("id", flat=True)),
+            "allowed_branch_ids": list(Branch.objects.for_tenant(membership.tenant_id).filter(is_active=True).order_by("name", "id").values_list("id", flat=True)),
         })
