@@ -2,6 +2,9 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
+from apps.tenancy.access import membership_can_access_branch
+from apps.tenancy.models import Membership
+
 from .models import PurchaseReceipt, PurchaseReceiptLine
 
 
@@ -18,8 +21,9 @@ class PurchaseReturnInputSerializer(serializers.Serializer):
     def validate(self, attrs):
         tenant_id = self.context["tenant_id"]
         receipt = PurchaseReceipt.objects.for_tenant(tenant_id).filter(pk=attrs["receipt_id"]).first()
-        if receipt is None:
-            raise serializers.ValidationError({"receipt_id": "Select a purchase receipt in your store."})
+        membership = Membership.objects.filter(pk=self.context["membership_id"], tenant_id=tenant_id, is_active=True, tenant__status="active").first()
+        if receipt is None or membership is None or not membership_can_access_branch(membership, receipt.branch_id):
+            raise serializers.ValidationError({"receipt_id": "Select a purchase receipt from an assigned branch in your store."})
         if not attrs["reason"].strip():
             raise serializers.ValidationError({"reason": "A return reason is required."})
         line_ids = [line["receipt_line_id"] for line in attrs["lines"]]
