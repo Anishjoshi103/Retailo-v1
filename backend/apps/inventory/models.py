@@ -45,7 +45,7 @@ class StockMovement(TenantOwnedModel):
         indexes = [models.Index(fields=["tenant", "branch", "product", "created_at"], name="ix_stock_move_lookup")]
 
     def save(self, *args, **kwargs):
-        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+        if not self._state.adding:
             raise TypeError("Stock movements are append-only; create a reversal instead.")
         super().save(*args, **kwargs)
 
@@ -89,7 +89,7 @@ class PurchaseReceipt(TenantOwnedModel):
         indexes = [models.Index(fields=["tenant", "branch", "received_at"], name="ix_receipt_tenant_branch_date")]
 
     def save(self, *args, **kwargs):
-        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+        if not self._state.adding:
             raise TypeError("Posted purchase receipts are immutable.")
         super().save(*args, **kwargs)
 
@@ -112,7 +112,7 @@ class PurchaseReceiptLine(TenantOwnedModel):
         ]
 
     def save(self, *args, **kwargs):
-        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+        if not self._state.adding:
             raise TypeError("Posted purchase receipt lines are immutable.")
         super().save(*args, **kwargs)
 
@@ -170,7 +170,7 @@ class PurchaseReturn(TenantOwnedModel):
         indexes = [models.Index(fields=["tenant", "receipt", "returned_at"], name="ix_return_tenant_receipt_date")]
 
     def save(self, *args, **kwargs):
-        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+        if not self._state.adding:
             raise TypeError("Posted purchase returns are immutable.")
         super().save(*args, **kwargs)
 
@@ -190,7 +190,7 @@ class PurchaseReturnLine(TenantOwnedModel):
         constraints = [models.CheckConstraint(condition=models.Q(quantity__gt=0), name="ck_purchase_return_qty_positive")]
 
     def save(self, *args, **kwargs):
-        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+        if not self._state.adding:
             raise TypeError("Posted purchase return lines are immutable.")
         super().save(*args, **kwargs)
 
