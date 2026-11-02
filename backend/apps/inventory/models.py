@@ -15,6 +15,30 @@ class ImmutableQuerySet(TenantQuerySet):
         raise TypeError("Stock movements are append-only.")
 
 
+class PurchaseInvoiceLineQuerySet(TenantQuerySet):
+    def update(self, **kwargs):
+        if self.filter(invoice__status=PurchaseInvoice.Status.POSTED).exists():
+            raise TypeError("Lines on posted purchase invoices are immutable.")
+        return super().update(**kwargs)
+
+    def delete(self):
+        if self.filter(invoice__status=PurchaseInvoice.Status.POSTED).exists():
+            raise TypeError("Lines on posted purchase invoices are immutable.")
+        return super().delete()
+
+
+class PurchaseInvoiceAllocationQuerySet(TenantQuerySet):
+    def update(self, **kwargs):
+        if self.filter(invoice_line__invoice__status=PurchaseInvoice.Status.POSTED).exists():
+            raise TypeError("Allocations on posted purchase invoices are immutable.")
+        return super().update(**kwargs)
+
+    def delete(self):
+        if self.filter(invoice_line__invoice__status=PurchaseInvoice.Status.POSTED).exists():
+            raise TypeError("Allocations on posted purchase invoices are immutable.")
+        return super().delete()
+
+
 class StockMovement(TenantOwnedModel):
     class Reason(models.TextChoices):
         OPENING = "opening", "Opening stock"
@@ -260,6 +284,8 @@ class PurchaseInvoice(TenantOwnedModel):
 class PurchaseInvoiceLine(TenantOwnedModel):
     """Billed line with a persisted, auditable GST calculation snapshot."""
 
+    objects: ClassVar[models.Manager["PurchaseInvoiceLine"]] = PurchaseInvoiceLineQuerySet.as_manager()
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     invoice = models.ForeignKey(PurchaseInvoice, on_delete=models.PROTECT, related_name="lines")
     product = models.ForeignKey("catalog.Product", on_delete=models.PROTECT, related_name="purchase_invoice_lines")
@@ -303,6 +329,8 @@ class PurchaseInvoiceLine(TenantOwnedModel):
 
 class PurchaseInvoiceAllocation(TenantOwnedModel):
     """Allocation of a billed line to a received GRN line."""
+
+    objects: ClassVar[models.Manager["PurchaseInvoiceAllocation"]] = PurchaseInvoiceAllocationQuerySet.as_manager()
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     invoice_line = models.ForeignKey(PurchaseInvoiceLine, on_delete=models.PROTECT, related_name="grn_allocations")
