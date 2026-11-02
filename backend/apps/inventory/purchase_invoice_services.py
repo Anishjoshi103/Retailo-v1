@@ -6,6 +6,7 @@ stock movements; this service never changes inventory balances or stock ledger.
 from decimal import Decimal
 
 from django.db import transaction
+from django.db.models import QuerySet
 from django.utils import timezone
 
 from .models import (
@@ -137,9 +138,16 @@ def post_purchase_invoice(*, tenant_id, invoice_id):
         raise PurchaseInvoicePostingError("Invoice totals do not reconcile to its line snapshots.")
 
     posted_at = timezone.now()
-    PurchaseInvoice.objects.for_tenant(tenant_id).filter(
+    posting_queryset = PurchaseInvoice.objects.for_tenant(tenant_id).filter(
         pk=invoice.pk, status=PurchaseInvoice.Status.DRAFT
-    ).update(status=PurchaseInvoice.Status.POSTED, posted_at=posted_at)
+    )
+    # Deliberately invoke Django's base implementation only after all posting
+    # validations and locks above; public queryset updates cannot post invoices.
+    QuerySet.update(
+        posting_queryset,
+        status=PurchaseInvoice.Status.POSTED,
+        posted_at=posted_at,
+    )
     invoice.refresh_from_db(fields=["status", "posted_at"])
     return invoice
 

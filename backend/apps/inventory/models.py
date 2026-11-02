@@ -279,6 +279,8 @@ class PurchaseInvoiceQuerySet(TenantQuerySet):
     def update(self, **kwargs):
         if self._posted_records_exist():
             raise TypeError(self.IMMUTABLE_MESSAGE)
+        if kwargs.get("status") == PurchaseInvoice.Status.POSTED:
+            raise TypeError(self.POSTING_SERVICE_MESSAGE)
         return super().update(**kwargs)
 
     def bulk_update(self, objs, fields, batch_size=None):
