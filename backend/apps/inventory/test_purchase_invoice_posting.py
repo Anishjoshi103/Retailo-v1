@@ -94,3 +94,47 @@ class PurchaseInvoicePostingTests(TestCase):
 
         with self.assertRaisesMessage(PurchaseInvoicePostingError, "not found in this store"):
             post_purchase_invoice(tenant_id=other_tenant.id, invoice_id="00000000-0000-0000-0000-000000000001")
+
+
+    def test_bulk_create_rejects_line_for_posted_invoice(self):
+        invoice = self.create_invoice()
+        post_purchase_invoice(tenant_id=self.tenant.id, invoice_id=invoice.id)
+
+        line = PurchaseInvoiceLine(
+            tenant=self.tenant,
+            invoice=invoice,
+            product=self.product,
+            description_snapshot=self.product.name,
+            hsn_code="1006",
+            quantity=Decimal("1.000"),
+            unit_price=Decimal("45.0000"),
+            discount_amount=Decimal("0.00"),
+            taxable_value=Decimal("45.00"),
+            gst_rate=Decimal("5.00"),
+            cgst_amount=Decimal("1.13"),
+            sgst_amount=Decimal("1.12"),
+            igst_amount=Decimal("0.00"),
+            total_tax=Decimal("2.25"),
+            total_amount=Decimal("47.25"),
+        )
+        with self.assertRaisesMessage(TypeError, "Lines on posted purchase invoices are immutable."):
+            PurchaseInvoiceLine.objects.bulk_create([line])
+
+        self.assertEqual(invoice.lines.count(), 1)
+
+    def test_bulk_create_rejects_allocation_for_posted_invoice(self):
+        invoice = self.create_invoice()
+        post_purchase_invoice(tenant_id=self.tenant.id, invoice_id=invoice.id)
+        line = invoice.lines.get()
+        allocation = PurchaseInvoiceAllocation(
+            tenant=self.tenant,
+            invoice_line=line,
+            receipt_line=self.receipt_line,
+            quantity=Decimal("1.000"),
+            taxable_value=Decimal("45.00"),
+        )
+
+        with self.assertRaisesMessage(TypeError, "Allocations on posted purchase invoices are immutable."):
+            PurchaseInvoiceAllocation.objects.bulk_create([allocation])
+
+        self.assertEqual(line.grn_allocations.count(), 1)
