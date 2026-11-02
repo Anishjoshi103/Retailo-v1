@@ -363,3 +363,29 @@ class PurchaseReceiptApiTests(TestCase):
         with self.assertNumQueries(0):
             with self.assertRaises(TypeError):
                 receipt.save(update_fields=["supplier_name"])
+
+
+    def test_adjustment_rejects_idempotency_key_used_by_receipt(self):
+        receipt = self.client.post(
+            "/api/v1/inventory/receipts", self.payload(), format="json",
+            HTTP_IDEMPOTENCY_KEY="shared-operation-key",
+        )
+        self.assertEqual(receipt.status_code, 201, receipt.content)
+        before = InventoryBalance.objects.for_tenant(self.tenant.id).get().quantity_on_hand
+
+        response = self.client.post(
+            "/api/v1/inventory/adjustments",
+            {
+                "branch_id": str(self.branch.id),
+                "product_id": str(self.product.id),
+                "quantity_delta": "12.500",
+                "note": "Not a receipt replay",
+            },
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="shared-operation-key",
+        )
+        self.assertEqual(response.status_code, 409, response.content)
+        self.assertEqual(
+            InventoryBalance.objects.for_tenant(self.tenant.id).get().quantity_on_hand,
+            before,
+        )
