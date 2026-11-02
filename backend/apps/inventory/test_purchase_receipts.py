@@ -365,13 +365,24 @@ class PurchaseReceiptApiTests(TestCase):
                 receipt.save(update_fields=["supplier_name"])
 
 
-    def test_adjustment_rejects_idempotency_key_used_by_receipt(self):
-        receipt = self.client.post(
-            "/api/v1/inventory/receipts", self.payload(), format="json",
-            HTTP_IDEMPOTENCY_KEY="shared-operation-key",
+    def test_adjustment_rejects_idempotency_key_used_by_other_movement_reason(self):
+        balance = InventoryBalance.objects.create(
+            tenant=self.tenant,
+            branch=self.branch,
+            product=self.product,
+            quantity_on_hand=Decimal("12.500"),
         )
-        self.assertEqual(receipt.status_code, 201, receipt.content)
-        before = InventoryBalance.objects.for_tenant(self.tenant.id).get().quantity_on_hand
+        StockMovement.objects.create(
+            tenant=self.tenant,
+            branch=self.branch,
+            product=self.product,
+            quantity_delta=Decimal("12.500"),
+            reason=StockMovement.Reason.RECEIPT,
+            reference="receipt-test",
+            idempotency_key="shared-operation-key",
+            created_by=self.user,
+        )
+        before = balance.quantity_on_hand
 
         response = self.client.post(
             "/api/v1/inventory/adjustments",
@@ -385,7 +396,5 @@ class PurchaseReceiptApiTests(TestCase):
             HTTP_IDEMPOTENCY_KEY="shared-operation-key",
         )
         self.assertEqual(response.status_code, 409, response.content)
-        self.assertEqual(
-            InventoryBalance.objects.for_tenant(self.tenant.id).get().quantity_on_hand,
-            before,
-        )
+        balance.refresh_from_db()
+        self.assertEqual(balance.quantity_on_hand, before)
