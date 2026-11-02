@@ -260,8 +260,37 @@ class PurchaseReturnLine(TenantOwnedModel):
 
 
 
+class PurchaseInvoiceQuerySet(TenantQuerySet):
+    IMMUTABLE_MESSAGE = "Posted purchase invoices are immutable; use a reversal or credit note."
+
+    def _posted_records_exist(self, ids=None):
+        queryset = self.filter(status=PurchaseInvoice.Status.POSTED)
+        if ids is not None:
+            queryset = queryset.filter(pk__in=ids)
+        return queryset.exists()
+
+    def update(self, **kwargs):
+        if self._posted_records_exist():
+            raise TypeError(self.IMMUTABLE_MESSAGE)
+        return super().update(**kwargs)
+
+    def bulk_update(self, objs, fields, batch_size=None):
+        objs = list(objs)
+        ids = [obj.pk for obj in objs if obj.pk is not None]
+        if ids and self._posted_records_exist(ids):
+            raise TypeError(self.IMMUTABLE_MESSAGE)
+        return super().bulk_update(objs, fields, batch_size=batch_size)
+
+    def delete(self):
+        if self._posted_records_exist():
+            raise TypeError(self.IMMUTABLE_MESSAGE)
+        return super().delete()
+
+
 class PurchaseInvoice(TenantOwnedModel):
     """Supplier tax invoice snapshot; stock is not changed by invoice recording."""
+
+    objects: ClassVar[models.Manager["PurchaseInvoice"]] = PurchaseInvoiceQuerySet.as_manager()
 
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
