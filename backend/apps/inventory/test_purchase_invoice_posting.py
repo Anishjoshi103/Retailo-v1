@@ -176,3 +176,18 @@ class PurchaseInvoicePostingTests(TestCase):
             PurchaseInvoice.objects.filter(pk=invoice.pk).delete()
 
         self.assertTrue(PurchaseInvoice.objects.filter(pk=invoice.pk).exists())
+
+
+    def test_direct_save_cannot_bypass_purchase_invoice_posting_service(self):
+        invoice = self.create_invoice()
+        invoice.status = PurchaseInvoice.Status.POSTED
+        invoice.posted_at = None
+
+        with self.assertRaisesMessage(
+            TypeError, "Purchase invoices must be posted through post_purchase_invoice()."
+        ):
+            invoice.save(update_fields=["status", "posted_at"])
+
+        invoice.refresh_from_db()
+        self.assertEqual(invoice.status, PurchaseInvoice.Status.DRAFT)
+        self.assertIsNone(invoice.posted_at)
