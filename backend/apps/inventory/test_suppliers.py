@@ -61,3 +61,25 @@ class SupplierApiTests(TestCase):
         )
         self.assertEqual(duplicate.status_code, 400, duplicate.content)
         self.assertEqual(Supplier.objects.for_tenant(self.tenant.id).count(), 1)
+
+
+    def test_gstin_unique_constraint_race_returns_validation_error(self):
+        from unittest.mock import patch
+        from django.db import IntegrityError
+
+        existing = Supplier.objects.create(
+            tenant=self.tenant, name="Existing Supplier", gstin="27AABCU9603R1ZM"
+        )
+        with (
+            patch("apps.inventory.supplier_serializers.SupplierSerializer.validate_gstin", return_value=existing.gstin),
+            patch("apps.inventory.supplier_views.SupplierListCreateView.perform_create") as perform_create,
+        ):
+            def simulate_unique_race(serializer):
+                raise IntegrityError("uq_supplier_tenant_gstin")
+            perform_create.side_effect = simulate_unique_race
+            response = self.client.post(
+                "/api/v1/inventory/suppliers",
+                {"name": "Concurrent Supplier", "gstin": existing.gstin},
+                format="json",
+            )
+        self.assertEqual(response.status_code, 400, response.content)
