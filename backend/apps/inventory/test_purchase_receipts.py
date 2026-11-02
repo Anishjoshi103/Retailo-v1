@@ -304,3 +304,50 @@ class PurchaseReceiptApiTests(TestCase):
             ).count(),
             1,
         )
+
+
+    def test_unique_key_race_replays_committed_stock_adjustment(self):
+        payload = {
+            "branch_id": str(self.branch.id),
+            "product_id": str(self.product.id),
+            "quantity_delta": "3.000",
+            "note": "Stock count correction",
+        }
+        original = self.client.post(
+            "/api/v1/inventory/adjustments", payload, format="json",
+            HTTP_IDEMPOTENCY_KEY="adjustment-race-replay",
+        )
+        self.assertEqual(original.status_code, 201, original.content)
+        existing = StockMovement.objects.for_tenant(self.tenant.id).get(
+            idempotency_key="adjustment-race-replay"
+        )
+
+        first_lookup = MagicMock()
+        first_lookup.filter.return_value.first.return_value = None
+        manager = StockMovement.objects
+        with (
+            patch.object(
+                manager,
+                "for_tenant",
+                side_effect=[first_lookup, manager.for_tenant(self.tenant.id)],
+            ),
+            patch.object(manager, "create", side_effect=IntegrityError("unique race")),
+        ):
+            response = self.client.post(
+                "/api/v1/inventory/adjustments", payload, format="json",
+                HTTP_IDEMPOTENCY_KEY="adjustment-race-replay",
+            )
+
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertTrue(response.json()["replayed"])
+        self.assertEqual(response.json()["movement_id"], str(existing.id))
+        self.assertEqual(
+            InventoryBalance.objects.for_tenant(self.tenant.id).get().quantity_on_hand,
+            Decimal("3.000"),
+        )
+        self.assertEqual(
+            StockMovement.objects.for_tenant(self.tenant.id).filter(
+                reason=StockMovement.Reason.ADJUSTMENT
+            ).count(),
+            1,
+        )
