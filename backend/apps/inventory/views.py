@@ -52,8 +52,16 @@ class StockAdjustmentView(APIView):
             with transaction.atomic():
                 prior = StockMovement.objects.for_tenant(tenant_id).filter(idempotency_key=key).first()
                 if prior:
-                    if prior.branch_id != data["branch"].id or prior.product_id != data["product"].id or prior.quantity_delta != data["quantity_delta"]:
-                        return Response({"detail": "Idempotency-Key was already used for a different adjustment."}, status=status.HTTP_409_CONFLICT)
+                    if (
+                        prior.reason != StockMovement.Reason.ADJUSTMENT
+                        or prior.branch_id != data["branch"].id
+                        or prior.product_id != data["product"].id
+                        or prior.quantity_delta != data["quantity_delta"]
+                    ):
+                        return Response(
+                            {"detail": "Idempotency-Key was already used for a different adjustment."},
+                            status=status.HTTP_409_CONFLICT,
+                        )
                     balance = InventoryBalance.objects.for_tenant(tenant_id).get(branch=prior.branch, product=prior.product)
                     return Response({"movement_id": str(prior.id), "quantity_on_hand": str(balance.quantity_on_hand), "replayed": True}, status=status.HTTP_200_OK)
                 balance, _ = InventoryBalance.objects.get_or_create(tenant_id=tenant_id, branch=data["branch"], product=data["product"])
