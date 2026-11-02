@@ -72,11 +72,8 @@ class SupplierApiTests(TestCase):
         )
         with (
             patch("apps.inventory.supplier_serializers.SupplierSerializer.validate_gstin", return_value=existing.gstin),
-            patch("apps.inventory.supplier_views.SupplierListCreateView.perform_create") as perform_create,
+            patch("apps.inventory.supplier_serializers.SupplierSerializer.save", side_effect=IntegrityError("unique race")),
         ):
-            def simulate_unique_race(serializer):
-                raise IntegrityError("uq_supplier_tenant_gstin")
-            perform_create.side_effect = simulate_unique_race
             response = self.client.post(
                 "/api/v1/inventory/suppliers",
                 {"name": "Concurrent Supplier", "gstin": existing.gstin},
