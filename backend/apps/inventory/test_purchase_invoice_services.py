@@ -142,3 +142,25 @@ class PurchaseInvoicePostingTests(TestCase):
 
         with self.assertRaisesMessage(PurchaseInvoicePostingError, "not found in this store"):
             post_purchase_invoice(tenant_id=other_tenant.id, invoice_id=self.invoice.id)
+
+
+    def test_new_invoice_save_guard_does_not_query_existing_row(self):
+        invoice = PurchaseInvoice(
+            tenant=self.tenant,
+            supplier=self.supplier,
+            branch=self.branch,
+            supplier_name=self.supplier.name,
+            supplier_gstin=self.supplier.gstin,
+            supplier_state_code="27",
+            place_of_supply_state_code="27",
+            invoice_number="SUP-INV-NEW",
+            invoice_date=date(2026, 11, 2),
+            taxable_total=Decimal("0.00"),
+            tax_total=Decimal("0.00"),
+            total_amount=Decimal("0.00"),
+            idempotency_key="invoice-new-save",
+            request_hash="c" * 64,
+            created_by=self.user,
+        )
+        with self.assertNumQueries(1):
+            invoice.save()
