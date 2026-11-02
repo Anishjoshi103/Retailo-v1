@@ -351,3 +351,15 @@ class PurchaseReceiptApiTests(TestCase):
             ).count(),
             1,
         )
+
+
+    def test_saved_posted_receipt_immutability_guard_avoids_existence_query(self):
+        response = self.client.post(
+            "/api/v1/inventory/receipts", self.payload(), format="json",
+            HTTP_IDEMPOTENCY_KEY="immutable-no-exists-query",
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        receipt = PurchaseReceipt.objects.for_tenant(self.tenant.id).get()
+        with self.assertNumQueries(0):
+            with self.assertRaises(TypeError):
+                receipt.save(update_fields=["supplier_name"])
