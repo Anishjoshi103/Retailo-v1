@@ -138,3 +138,41 @@ class PurchaseInvoicePostingTests(TestCase):
             PurchaseInvoiceAllocation.objects.bulk_create([allocation])
 
         self.assertEqual(line.grn_allocations.count(), 1)
+
+
+    def test_queryset_update_rejects_posted_purchase_invoice(self):
+        invoice = self.create_invoice()
+        post_purchase_invoice(tenant_id=self.tenant.id, invoice_id=invoice.id)
+
+        with self.assertRaisesMessage(
+            TypeError, "Posted purchase invoices are immutable; use a reversal or credit note."
+        ):
+            PurchaseInvoice.objects.filter(pk=invoice.pk).update(total_amount=Decimal("999.99"))
+
+        invoice.refresh_from_db()
+        self.assertEqual(invoice.total_amount, Decimal("141.76"))
+
+    def test_bulk_update_rejects_posted_purchase_invoice(self):
+        invoice = self.create_invoice()
+        post_purchase_invoice(tenant_id=self.tenant.id, invoice_id=invoice.id)
+        invoice.refresh_from_db()
+        invoice.total_amount = Decimal("999.99")
+
+        with self.assertRaisesMessage(
+            TypeError, "Posted purchase invoices are immutable; use a reversal or credit note."
+        ):
+            PurchaseInvoice.objects.bulk_update([invoice], ["total_amount"])
+
+        invoice.refresh_from_db()
+        self.assertEqual(invoice.total_amount, Decimal("141.76"))
+
+    def test_queryset_delete_rejects_posted_purchase_invoice(self):
+        invoice = self.create_invoice()
+        post_purchase_invoice(tenant_id=self.tenant.id, invoice_id=invoice.id)
+
+        with self.assertRaisesMessage(
+            TypeError, "Posted purchase invoices are immutable; use a reversal or credit note."
+        ):
+            PurchaseInvoice.objects.filter(pk=invoice.pk).delete()
+
+        self.assertTrue(PurchaseInvoice.objects.filter(pk=invoice.pk).exists())
