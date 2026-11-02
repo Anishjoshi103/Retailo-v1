@@ -19,6 +19,15 @@ class ImmutableQuerySet(TenantQuerySet):
 
 
 class PurchaseInvoiceLineQuerySet(TenantQuerySet):
+    def bulk_create(self, objs, **kwargs):
+        objs = list(objs)
+        invoice_ids = {obj.invoice_id for obj in objs}
+        if invoice_ids and PurchaseInvoice.objects.filter(
+            pk__in=invoice_ids, status=PurchaseInvoice.Status.POSTED
+        ).exists():
+            raise TypeError("Lines on posted purchase invoices are immutable.")
+        return super().bulk_create(objs, **kwargs)
+
     def bulk_update(self, objs, fields, batch_size=None):
         objs = list(objs)
         object_ids = [obj.pk for obj in objs]
@@ -38,6 +47,15 @@ class PurchaseInvoiceLineQuerySet(TenantQuerySet):
 
 
 class PurchaseInvoiceAllocationQuerySet(TenantQuerySet):
+    def bulk_create(self, objs, **kwargs):
+        objs = list(objs)
+        invoice_line_ids = {obj.invoice_line_id for obj in objs}
+        if invoice_line_ids and PurchaseInvoiceLine.objects.filter(
+            pk__in=invoice_line_ids, invoice__status=PurchaseInvoice.Status.POSTED
+        ).exists():
+            raise TypeError("Allocations on posted purchase invoices are immutable.")
+        return super().bulk_create(objs, **kwargs)
+
     def bulk_update(self, objs, fields, batch_size=None):
         objs = list(objs)
         object_ids = [obj.pk for obj in objs]
