@@ -223,3 +223,15 @@ class PurchaseInvoicePostingTests(TestCase):
         self.assertFalse(
             PurchaseInvoice.objects.filter(idempotency_key="invoice-bulk-posted").exists()
         )
+
+
+    def test_queryset_update_cannot_post_draft_invoice_without_service(self):
+        invoice = self.create_invoice()
+
+        with self.assertRaisesMessage(
+            TypeError, "Purchase invoices must be posted through post_purchase_invoice()."
+        ):
+            PurchaseInvoice.objects.filter(pk=invoice.pk).update(status=PurchaseInvoice.Status.POSTED)
+
+        invoice.refresh_from_db()
+        self.assertEqual(invoice.status, PurchaseInvoice.Status.DRAFT)
