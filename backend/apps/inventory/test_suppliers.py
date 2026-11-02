@@ -65,6 +65,7 @@ class SupplierApiTests(TestCase):
 
     def test_gstin_unique_constraint_race_returns_validation_error(self):
         from unittest.mock import patch
+
         from django.db import IntegrityError
 
         existing = Supplier.objects.create(
