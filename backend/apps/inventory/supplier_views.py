@@ -1,4 +1,5 @@
-from rest_framework import generics, permissions
+from django.db import IntegrityError, transaction
+from rest_framework import generics, permissions, serializers
 
 from apps.tenancy.permissions import active_tenant_membership, require_membership_role
 
@@ -35,4 +36,15 @@ class SupplierListCreateView(generics.ListCreateAPIView):
             "Store manager permissions are required to create suppliers.",
         )
         tenant_id = membership.tenant_id
-        serializer.save(tenant_id=tenant_id)
+        try:
+            # Keep the write in a savepoint so the connection remains usable
+            # after a concurrent unique-constraint violation.
+            with transaction.atomic():
+                serializer.save(tenant_id=tenant_id)
+        except IntegrityError as exc:
+            gstin = serializer.validated_data.get("gstin", "")
+            if gstin and Supplier.objects.for_tenant(tenant_id).filter(gstin=gstin).exists():
+                raise serializers.ValidationError(
+                    {"gstin": "A supplier with this GSTIN already exists in this store."}
+                ) from exc
+            raise
