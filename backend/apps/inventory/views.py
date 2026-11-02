@@ -65,5 +65,28 @@ class StockAdjustmentView(APIView):
                     note=data.get("note", ""), created_by=request.user,
                 )
         except IntegrityError as exc:
+            # A concurrent request may have committed this key after our first
+            # lookup. Re-read after the atomic block has rolled back.
+            prior = StockMovement.objects.for_tenant(tenant_id).filter(
+                idempotency_key=key
+            ).first()
+            if prior is not None:
+                if (
+                    prior.reason != StockMovement.Reason.ADJUSTMENT
+                    or prior.branch_id != data["branch"].id
+                    or prior.product_id != data["product"].id
+                    or prior.quantity_delta != data["quantity_delta"]
+                ):
+                    return Response(
+                        {"detail": "Idempotency-Key was already used for a different adjustment."},
+                        status=status.HTTP_409_CONFLICT,
+                    )
+                balance = InventoryBalance.objects.for_tenant(tenant_id).get(
+                    branch=prior.branch, product=prior.product
+                )
+                return Response(
+                    {"movement_id": str(prior.id), "quantity_on_hand": str(balance.quantity_on_hand), "replayed": True},
+                    status=status.HTTP_200_OK,
+                )
             raise APIException("The stock adjustment conflicted with another update. Retry with the same Idempotency-Key.") from exc
         return Response({"movement_id": str(movement.id), "quantity_on_hand": str(balance.quantity_on_hand), "replayed": False}, status=status.HTTP_201_CREATED)
