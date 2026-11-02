@@ -262,6 +262,13 @@ class PurchaseReturnLine(TenantOwnedModel):
 
 class PurchaseInvoiceQuerySet(TenantQuerySet):
     IMMUTABLE_MESSAGE = "Posted purchase invoices are immutable; use a reversal or credit note."
+    POSTING_SERVICE_MESSAGE = "Purchase invoices must be posted through post_purchase_invoice()."
+
+    def bulk_create(self, objs, **kwargs):
+        objs = list(objs)
+        if any(obj.status == PurchaseInvoice.Status.POSTED for obj in objs):
+            raise TypeError(self.POSTING_SERVICE_MESSAGE)
+        return super().bulk_create(objs, **kwargs)
 
     def _posted_records_exist(self, ids=None):
         queryset = self.filter(status=PurchaseInvoice.Status.POSTED)

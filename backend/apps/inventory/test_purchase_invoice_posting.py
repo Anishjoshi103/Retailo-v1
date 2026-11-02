@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.utils import timezone
 
 from apps.catalog.models import Product
 from apps.inventory.models import (
@@ -191,3 +192,34 @@ class PurchaseInvoicePostingTests(TestCase):
         invoice.refresh_from_db()
         self.assertEqual(invoice.status, PurchaseInvoice.Status.DRAFT)
         self.assertIsNone(invoice.posted_at)
+
+
+    def test_bulk_create_rejects_already_posted_purchase_invoice(self):
+        invoice = PurchaseInvoice(
+            tenant=self.tenant,
+            supplier=self.supplier,
+            branch=self.branch,
+            supplier_name=self.supplier.name,
+            supplier_gstin=self.supplier.gstin,
+            supplier_state_code="27",
+            place_of_supply_state_code="27",
+            invoice_number="SUP-BULK-POSTED",
+            invoice_date=date(2026, 10, 31),
+            status=PurchaseInvoice.Status.POSTED,
+            taxable_total=Decimal("0.00"),
+            tax_total=Decimal("0.00"),
+            total_amount=Decimal("0.00"),
+            idempotency_key="invoice-bulk-posted",
+            request_hash="c" * 64,
+            created_by=self.user,
+            posted_at=timezone.now(),
+        )
+
+        with self.assertRaisesMessage(
+            TypeError, "Purchase invoices must be posted through post_purchase_invoice()."
+        ):
+            PurchaseInvoice.objects.bulk_create([invoice])
+
+        self.assertFalse(
+            PurchaseInvoice.objects.filter(idempotency_key="invoice-bulk-posted").exists()
+        )
