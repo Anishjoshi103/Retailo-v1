@@ -339,6 +339,12 @@ class PurchaseInvoice(TenantOwnedModel):
             existing = type(self).objects.filter(pk=self.pk).first()
             if existing and existing.status == self.Status.POSTED:
                 raise TypeError("Posted purchase invoices are immutable; use a reversal or credit note.")
+            if (
+                existing
+                and existing.status == self.Status.DRAFT
+                and self.status == self.Status.POSTED
+            ):
+                raise TypeError("Purchase invoices must be posted through post_purchase_invoice().")
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):

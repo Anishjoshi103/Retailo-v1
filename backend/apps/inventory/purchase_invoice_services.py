@@ -136,8 +136,10 @@ def post_purchase_invoice(*, tenant_id, invoice_id):
     if (invoice.taxable_total, invoice.tax_total, invoice.total_amount) != (taxable_total, tax_total, invoice_total):
         raise PurchaseInvoicePostingError("Invoice totals do not reconcile to its line snapshots.")
 
-    invoice.status = PurchaseInvoice.Status.POSTED
-    invoice.posted_at = timezone.now()
-    invoice.save(update_fields=["status", "posted_at"])
+    posted_at = timezone.now()
+    PurchaseInvoice.objects.for_tenant(tenant_id).filter(
+        pk=invoice.pk, status=PurchaseInvoice.Status.DRAFT
+    ).update(status=PurchaseInvoice.Status.POSTED, posted_at=posted_at)
+    invoice.refresh_from_db(fields=["status", "posted_at"])
     return invoice
 
