@@ -181,3 +181,16 @@ class PurchaseInvoicePostingTests(TestCase):
             )
         with self.assertRaises(TypeError):
             PurchaseInvoiceAllocation.objects.filter(pk=self.allocation.pk).delete()
+
+
+    def test_posted_invoice_lines_reject_bulk_update(self):
+        post_purchase_invoice(tenant_id=self.tenant.id, invoice_id=self.invoice.id)
+        self.line.description_snapshot = "tampered"
+        with self.assertRaises(TypeError):
+            PurchaseInvoiceLine.objects.bulk_update([self.line], ["description_snapshot"])
+
+    def test_posted_invoice_allocations_reject_bulk_update(self):
+        post_purchase_invoice(tenant_id=self.tenant.id, invoice_id=self.invoice.id)
+        self.allocation.quantity = Decimal("9.000")
+        with self.assertRaises(TypeError):
+            PurchaseInvoiceAllocation.objects.bulk_update([self.allocation], ["quantity"])
