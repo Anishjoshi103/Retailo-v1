@@ -44,3 +44,20 @@ class SupplierApiTests(TestCase):
         response = self.client.post("/api/v1/inventory/suppliers", {"name": "Blocked Supplier"}, format="json")
         self.assertEqual(response.status_code, 403)
         self.assertEqual(Supplier.objects.count(), 0)
+
+
+    def test_duplicate_gstin_in_same_tenant_returns_validation_error(self):
+        first = self.client.post(
+            "/api/v1/inventory/suppliers",
+            {"name": "Supplier One", "gstin": "27AABCU9603R1ZM"},
+            format="json",
+        )
+        self.assertEqual(first.status_code, 201, first.content)
+
+        duplicate = self.client.post(
+            "/api/v1/inventory/suppliers",
+            {"name": "Supplier Duplicate", "gstin": "27aabcu9603r1zm"},
+            format="json",
+        )
+        self.assertEqual(duplicate.status_code, 400, duplicate.content)
+        self.assertEqual(Supplier.objects.for_tenant(self.tenant.id).count(), 1)
