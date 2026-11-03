@@ -1,11 +1,11 @@
 from django.db import IntegrityError, transaction
 from django.db.models import F
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.tenancy.access import authorized_branches
+from apps.tenancy.access import authorized_branches, membership_can_access_branch
 from apps.tenancy.permissions import active_tenant_membership, require_membership_role
 
 from .models import InventoryBalance, StockMovement
@@ -26,6 +26,8 @@ class InventoryBalanceListView(generics.ListAPIView):
         branch_id = self.request.query_params.get("branch_id")
         product_id = self.request.query_params.get("product_id")
         if branch_id:
+            if not membership_can_access_branch(membership, branch_id):
+                raise PermissionDenied("You do not have access to the requested branch.")
             queryset = queryset.filter(branch_id=branch_id)
         if product_id:
             queryset = queryset.filter(product_id=product_id)
