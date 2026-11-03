@@ -224,3 +224,34 @@ class CatalogApiTests(TestCase):
                     HTTP_IDEMPOTENCY_KEY=f"role-matrix-{role}",
                 )
                 self.assertEqual(response.status_code, status_code, response.content)
+
+    def test_product_list_role_matrix(self):
+        self.product(sku="ROLE-READ-PRODUCT")
+        expected_roles = {
+            Membership.Role.OWNER,
+            Membership.Role.ADMIN,
+            Membership.Role.MANAGER,
+            Membership.Role.CASHIER,
+            Membership.Role.ACCOUNTANT,
+        }
+        for role in expected_roles:
+            with self.subTest(role=role):
+                self.membership.role = role
+                self.membership.save(update_fields=["role"])
+                response = self.client.get("/api/v1/products")
+                self.assertEqual(response.status_code, 200, response.content)
+
+    def test_inventory_balance_list_role_matrix(self):
+        expected_roles = {
+            Membership.Role.OWNER,
+            Membership.Role.ADMIN,
+            Membership.Role.MANAGER,
+            Membership.Role.CASHIER,
+            Membership.Role.ACCOUNTANT,
+        }
+        for role in expected_roles:
+            with self.subTest(role=role):
+                self.membership.role = role
+                self.membership.save(update_fields=["role"])
+                response = self.client.get("/api/v1/inventory/balances")
+                self.assertEqual(response.status_code, 200, response.content)
