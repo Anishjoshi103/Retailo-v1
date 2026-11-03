@@ -288,6 +288,8 @@ class PurchaseInvoiceQuerySet(TenantQuerySet):
         ids = [obj.pk for obj in objs if obj.pk is not None]
         if ids and self._posted_records_exist(ids):
             raise TypeError(self.IMMUTABLE_MESSAGE)
+        if "status" in fields and any(obj.status == PurchaseInvoice.Status.POSTED for obj in objs):
+            raise TypeError(self.POSTING_SERVICE_MESSAGE)
         return super().bulk_update(objs, fields, batch_size=batch_size)
 
     def delete(self):

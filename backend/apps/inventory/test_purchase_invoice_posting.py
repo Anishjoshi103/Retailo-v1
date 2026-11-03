@@ -235,3 +235,16 @@ class PurchaseInvoicePostingTests(TestCase):
 
         invoice.refresh_from_db()
         self.assertEqual(invoice.status, PurchaseInvoice.Status.DRAFT)
+
+
+    def test_bulk_update_cannot_post_draft_invoice_without_service(self):
+        invoice = self.create_invoice()
+        invoice.status = PurchaseInvoice.Status.POSTED
+
+        with self.assertRaisesMessage(
+            TypeError, "Purchase invoices must be posted through post_purchase_invoice()."
+        ):
+            PurchaseInvoice.objects.bulk_update([invoice], ["status"])
+
+        invoice.refresh_from_db()
+        self.assertEqual(invoice.status, PurchaseInvoice.Status.DRAFT)
