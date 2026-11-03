@@ -100,3 +100,18 @@ class SupplierApiTests(TestCase):
                     format="json",
                 )
                 self.assertEqual(response.status_code, status_code, response.content)
+
+    def test_supplier_list_role_matrix(self):
+        expected_roles = {
+            Membership.Role.OWNER,
+            Membership.Role.ADMIN,
+            Membership.Role.MANAGER,
+            Membership.Role.CASHIER,
+            Membership.Role.ACCOUNTANT,
+        }
+        for role in expected_roles:
+            with self.subTest(role=role):
+                self.membership.role = role
+                self.membership.save(update_fields=["role"])
+                response = self.client.get("/api/v1/inventory/suppliers")
+                self.assertEqual(response.status_code, 200, response.content)
