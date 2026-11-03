@@ -398,3 +398,11 @@ class PurchaseReceiptApiTests(TestCase):
         self.assertEqual(response.status_code, 409, response.content)
         balance.refresh_from_db()
         self.assertEqual(balance.quantity_on_hand, before)
+
+
+    def test_inventory_balance_filter_rejects_unauthorized_branch(self):
+        response = self.client.get(
+            "/api/v1/inventory/balances",
+            {"branch_id": str(self.other_branch.id)},
+        )
+        self.assertEqual(response.status_code, 403, response.content)
