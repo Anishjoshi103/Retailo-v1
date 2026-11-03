@@ -1,30 +1,55 @@
 # Retailo role-based access control (RBAC)
 
-This matrix documents the currently implemented API surface. Tenant membership and tenant-scoped querysets are required for tenant data. Branch-scoped operations additionally require an active branch grant; a client-selected branch is never authorization by itself.
+This matrix describes the API routes currently registered in `config/urls.py` and the role checks implemented by their views. It is not a specification for unimplemented sales, reporting, or administration endpoints.
 
 ## Role definitions
 
-- **OWNER** — full tenant administration and operational access.
-- **ADMIN** — tenant administration and operational access, except owner-only actions where introduced.
-- **MANAGER** — day-to-day catalogue and store operations.
-- **CASHIER** — sales-counter role; access is limited to explicitly granted sales operations as those endpoints are implemented.
-- **ACCOUNTANT** — read-only operational access for reviewing catalogue and inventory data. Cannot create or change catalogue/inventory records.
+- **OWNER** — full tenant operational access; owner-only administration may be added explicitly.
+- **ADMIN** — tenant operational access, except owner-only actions where introduced.
+- **MANAGER** — day-to-day catalogue, inventory, and purchasing operations.
+- **CASHIER** — read access to currently available catalogue/inventory/supplier lists; no current write endpoint grants cashier mutation access.
+- **ACCOUNTANT** — read-only access to currently available catalogue/inventory/supplier lists; no current write endpoint grants accountant mutation access.
 
-## Current endpoint matrix
+## Tenant API role matrix
 
-| Endpoint | OWNER | ADMIN | MANAGER | CASHIER | ACCOUNTANT |
-|---|---|---|---|---|---|
-| `GET /api/v1/products` | Read | Read | Read | Read | Read |
-| `POST /api/v1/products` | Allow | Allow | Allow | Deny | Deny |
-| `GET /api/v1/inventory/balances` | Read, branch grant required | Read, branch grant required | Read, branch grant required | Read, branch grant required | Read, branch grant required |
-| `POST /api/v1/inventory/adjustments` | Allow, branch grant required | Allow, branch grant required | Allow, branch grant required | Deny | Deny |
+| Endpoint | OWNER | ADMIN | MANAGER | CASHIER | ACCOUNTANT | Additional server-side scope |
+|---|---|---|---|---|---|---|
+| `GET /api/v1/products` | Read | Read | Read | Read | Read | Active tenant |
+| `POST /api/v1/products` | Allow | Allow | Allow | Deny | Deny | Active tenant |
+| `GET /api/v1/inventory/balances` | Read | Read | Read | Read | Read | Active tenant and active branch grant |
+| `POST /api/v1/inventory/adjustments` | Allow | Allow | Allow | Deny | Deny | Active tenant and active branch grant |
+| `GET /api/v1/inventory/suppliers` | Read | Read | Read | Read | Read | Active tenant |
+| `POST /api/v1/inventory/suppliers` | Allow | Allow | Allow | Deny | Deny | Active tenant |
+| `POST /api/v1/inventory/receipts` | Allow | Allow | Allow | Deny | Deny | Active tenant and active branch grant |
+| `POST /api/v1/inventory/returns` | Allow | Allow | Allow | Deny | Deny | Active tenant and receipt's active branch grant |
+| `GET /api/v1/branches` | Read | Read | Read | Read | Read | Only active branches granted to the membership |
+| `GET /api/v1/auth/me` | Read | Read | Read | Read | Read | Authenticated active membership |
 
-**Important:** This is the implemented endpoint matrix, not a claim that every planned Retailo endpoint already exists. For any new endpoint, add an explicit role decision and endpoint permission tests before shipping. A role not explicitly allowed to mutate data must be denied mutation access. Every branch-scoped request must be validated server-side against active `BranchAccess`.
+The write decisions above are enforced by the endpoint role checks. Read routes require an authenticated active tenant membership; the branch-scoped routes additionally verify an active `BranchAccess`. A supplied branch identifier is never authorization by itself.
 
-## Enforcement and testing
+## Authentication and public routes
 
-- Membership must be active and belong to the authenticated user, selected tenant, and active tenant.
+The following routes intentionally use public authentication flows rather than tenant membership role checks:
+
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/verify-email`
+- `POST /api/v1/auth/password-reset/request`
+- `POST /api/v1/auth/password-reset/confirm`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+- `POST /api/v1/auth/logout`
+
+`refresh` and `logout` additionally validate request Origin when supplied and use the refresh-token cookie. `GET /api/v1/health`, `GET /api/v1/schema/`, and `GET /api/v1/docs/` are operational/schema routes, not tenant-role endpoints.
+
+## Enforcement and tests
+
+- Membership must be active and belong to the authenticated user, JWT-selected tenant, and active tenant.
 - Tenant-owned reads must use tenant-scoped querysets.
-- Branch selection must be checked against active branch access on the server.
-- Add tests for each endpoint/method and each role, including denied writes and cross-tenant/unauthorized-branch access.
-- The accountant role is intentionally read-only; do not grant write permissions by broad role defaults.
+- Branch selection must be checked server-side against active `BranchAccess`; inactive grants and inactive branches do not authorize access.
+- Every tenant API method must have an explicit role decision and endpoint tests for allowed and denied roles.
+- Cross-tenant object identifiers must be rejected; never trust a tenant or branch identifier supplied by the client without validating it against the authenticated membership.
+- Accountant remains read-only; do not grant write access through broad role defaults.
+
+## Coverage notes
+
+The role matrix is backed by endpoint tests for product create/list, inventory adjustment/balance list, supplier create/list, purchase receipt create, and purchase return create. Branch access and cross-tenant rejection are covered by endpoint-specific tests. Public authentication routes have separate authentication-flow tests.
