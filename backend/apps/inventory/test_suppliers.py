@@ -81,3 +81,22 @@ class SupplierApiTests(TestCase):
                 format="json",
             )
         self.assertEqual(response.status_code, 400, response.content)
+
+    def test_supplier_create_role_matrix(self):
+        expected = {
+            Membership.Role.OWNER: 201,
+            Membership.Role.ADMIN: 201,
+            Membership.Role.MANAGER: 201,
+            Membership.Role.CASHIER: 403,
+            Membership.Role.ACCOUNTANT: 403,
+        }
+        for role, status_code in expected.items():
+            with self.subTest(role=role):
+                self.membership.role = role
+                self.membership.save(update_fields=["role"])
+                response = self.client.post(
+                    "/api/v1/inventory/suppliers",
+                    {"name": f"Supplier {role}"},
+                    format="json",
+                )
+                self.assertEqual(response.status_code, status_code, response.content)

@@ -399,3 +399,23 @@ class PurchaseReceiptApiTests(TestCase):
         balance.refresh_from_db()
         self.assertEqual(balance.quantity_on_hand, before)
 
+
+    def test_purchase_receipt_create_role_matrix(self):
+        expected = {
+            Membership.Role.OWNER: 201,
+            Membership.Role.ADMIN: 201,
+            Membership.Role.MANAGER: 201,
+            Membership.Role.CASHIER: 403,
+            Membership.Role.ACCOUNTANT: 403,
+        }
+        for role, status_code in expected.items():
+            with self.subTest(role=role):
+                self.membership.role = role
+                self.membership.save(update_fields=["role"])
+                response = self.client.post(
+                    "/api/v1/inventory/receipts",
+                    self.payload(),
+                    format="json",
+                    HTTP_IDEMPOTENCY_KEY=f"receipt-role-{role}",
+                )
+                self.assertEqual(response.status_code, status_code, response.content)

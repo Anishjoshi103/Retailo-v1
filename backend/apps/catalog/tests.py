@@ -173,3 +173,54 @@ class CatalogApiTests(TestCase):
 
     def test_accountant_is_a_declared_membership_role(self):
         self.assertIn("accountant", Membership.Role.values)
+
+    def test_product_create_role_matrix(self):
+        expected = {
+            Membership.Role.OWNER: 201,
+            Membership.Role.ADMIN: 201,
+            Membership.Role.MANAGER: 201,
+            Membership.Role.CASHIER: 403,
+            Membership.Role.ACCOUNTANT: 403,
+        }
+        for role, status_code in expected.items():
+            with self.subTest(role=role):
+                self.membership.role = role
+                self.membership.save(update_fields=["role"])
+                response = self.client.post(
+                    "/api/v1/products",
+                    {
+                        "sku": f"ROLE-{role.upper()}",
+                        "name": "Role test product",
+                        "unit": "each",
+                        "gst_rate": "5.00",
+                        "selling_price": "35.00",
+                        "purchase_price": "28.00",
+                    },
+                    format="json",
+                )
+                self.assertEqual(response.status_code, status_code, response.content)
+
+    def test_inventory_adjustment_role_matrix(self):
+        product = self.product(sku="ROLE-MATRIX-STOCK")
+        expected = {
+            Membership.Role.OWNER: 201,
+            Membership.Role.ADMIN: 201,
+            Membership.Role.MANAGER: 201,
+            Membership.Role.CASHIER: 403,
+            Membership.Role.ACCOUNTANT: 403,
+        }
+        for role, status_code in expected.items():
+            with self.subTest(role=role):
+                self.membership.role = role
+                self.membership.save(update_fields=["role"])
+                response = self.client.post(
+                    "/api/v1/inventory/adjustments",
+                    {
+                        "branch_id": str(self.branch.id),
+                        "product_id": str(product.id),
+                        "quantity_delta": "1.000",
+                    },
+                    format="json",
+                    HTTP_IDEMPOTENCY_KEY=f"role-matrix-{role}",
+                )
+                self.assertEqual(response.status_code, status_code, response.content)
