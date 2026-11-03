@@ -148,3 +148,28 @@ class CatalogApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
+
+
+    def test_accountant_role_can_read_products_but_cannot_create_them(self):
+        self.membership.role = "accountant"
+        self.membership.save(update_fields=["role"])
+
+        read_response = self.client.get("/api/v1/products")
+        self.assertEqual(read_response.status_code, 200, read_response.content)
+
+        write_response = self.client.post(
+            "/api/v1/products",
+            {
+                "sku": "ACCOUNTANT-1",
+                "name": "Milk",
+                "unit": "each",
+                "gst_rate": "5.00",
+                "selling_price": "35.00",
+                "purchase_price": "28.00",
+            },
+            format="json",
+        )
+        self.assertEqual(write_response.status_code, 403, write_response.content)
+
+    def test_accountant_is_a_declared_membership_role(self):
+        self.assertIn("accountant", Membership.Role.values)
