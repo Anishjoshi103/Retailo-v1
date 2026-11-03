@@ -1,8 +1,8 @@
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import BasePermission
 
 from apps.tenancy.access import membership_can_access_branch
 from apps.tenancy.models import Membership
-from rest_framework.exceptions import PermissionDenied
 
 
 def active_tenant_membership(request) -> Membership:
