@@ -398,3 +398,4 @@ class PurchaseReceiptApiTests(TestCase):
         self.assertEqual(response.status_code, 409, response.content)
         balance.refresh_from_db()
         self.assertEqual(balance.quantity_on_hand, before)
+

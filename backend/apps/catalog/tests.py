@@ -147,5 +147,4 @@ class CatalogApiTests(TestCase):
             {"branch_id": str(unassigned.id)},
         )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), [])
+        self.assertEqual(response.status_code, 403)
