@@ -76,6 +76,39 @@ class TenantIdentityTests(TestCase):
             [branch_a, branch_b],
         )
 
+    def test_unscoped_default_manager_rejects_read_evaluation(self):
+        Branch.objects.create(tenant=self.tenant_a, name="A Main", code="MAIN")
+
+        with self.assertRaisesRegex(RuntimeError, "Explicit tenant scope required"):
+            list(Branch.objects.all())
+
+    def test_unscoped_count_and_exists_are_rejected(self):
+        Branch.objects.create(tenant=self.tenant_a, name="A Main", code="MAIN")
+
+        with self.assertRaisesRegex(RuntimeError, "Explicit tenant scope required"):
+            Branch.objects.count()
+        with self.assertRaisesRegex(RuntimeError, "Explicit tenant scope required"):
+            Branch.objects.exists()
+
+    def test_unscoped_iterator_and_aggregate_are_rejected(self):
+        from django.db.models import Count
+
+        Branch.objects.create(tenant=self.tenant_a, name="A Main", code="MAIN")
+
+        with self.assertRaisesRegex(RuntimeError, "Explicit tenant scope required"):
+            list(Branch.objects.iterator())
+        with self.assertRaisesRegex(RuntimeError, "Explicit tenant scope required"):
+            Branch.objects.aggregate(total=Count("id"))
+
+    def test_named_escape_hatch_allows_trusted_unscoped_reads(self):
+        branch_a = Branch.objects.create(tenant=self.tenant_a, name="A Main", code="MAIN")
+        branch_b = Branch.objects.create(tenant=self.tenant_b, name="B Main", code="MAIN")
+
+        self.assertCountEqual(
+            list(Branch.objects.unscoped(reason="tenant isolation audit")),
+            [branch_a, branch_b],
+        )
+
     def test_unscoped_default_manager_emits_runtime_warning(self):
         Branch.objects.create(tenant=self.tenant_a, name="A Main", code="MAIN")
 
