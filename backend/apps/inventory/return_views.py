@@ -82,7 +82,7 @@ class PurchaseReturnCreateView(APIView):
                         tenant_id=tenant_id, purchase_return=return_record, receipt_line=receipt_line,
                         product=receipt_line.product, quantity=quantity,
                     )
-                    InventoryBalance.objects.filter(pk=balance.pk).update(quantity_on_hand=F("quantity_on_hand") - quantity)
+                    InventoryBalance.objects.for_tenant(tenant_id).filter(pk=balance.pk).update(quantity_on_hand=F("quantity_on_hand") - quantity)
                     StockMovement.objects.create(
                         tenant_id=tenant_id, branch=receipt.branch, product=receipt_line.product,
                         quantity_delta=-quantity, reason=StockMovement.Reason.RETURN,
