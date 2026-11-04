@@ -113,7 +113,7 @@ def source_files() -> Iterable[Path]:
         if not root.exists():
             continue
         for path in root.rglob("*.py"):
-            if "migrations" in path.parts or any(
+            if "migrations" in path.parts or path.name == "tests.py" or any(
                 part in {"tests", "test"} for part in path.parts
             ) or path.name.startswith("test_"):
                 continue
