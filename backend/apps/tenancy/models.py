@@ -1,5 +1,4 @@
 import uuid
-import warnings
 
 from django.conf import settings
 from django.db import models
