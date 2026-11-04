@@ -1,4 +1,5 @@
 import uuid
+import warnings
 
 from django.conf import settings
 from django.db import models
@@ -6,10 +7,38 @@ from django.db.models import QuerySet
 
 
 class TenantQuerySet(QuerySet):
+    _tenant_scope_explicit = False
+    _tenant_scope_escape_reason = None
+
+    def _clone(self):
+        clone = super()._clone()
+        clone._tenant_scope_explicit = self._tenant_scope_explicit
+        clone._tenant_scope_escape_reason = self._tenant_scope_escape_reason
+        return clone
+
     def for_tenant(self, tenant_id):
-        if tenant_id is None:
-            return self.none()
-        return self.filter(tenant_id=tenant_id)
+        queryset = self.none() if tenant_id is None else self.filter(tenant_id=tenant_id)
+        queryset._tenant_scope_explicit = True
+        return queryset
+
+    def unscoped(self, *, reason):
+        """Explicitly opt into an unscoped query for trusted code; require rationale."""
+        if not isinstance(reason, str) or not reason.strip():
+            raise ValueError("An explicit reason is required for an unscoped tenant query.")
+        queryset = self.all()
+        queryset._tenant_scope_explicit = True
+        queryset._tenant_scope_escape_reason = reason.strip()
+        return queryset
+
+    def _fetch_all(self):
+        if not self._tenant_scope_explicit and self._result_cache is None:
+            warnings.warn(
+                f"Unscoped query on tenant-owned model {self.model.__name__}; "
+                "use .for_tenant(tenant_id) or .unscoped(reason=...) for trusted access.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+        return super()._fetch_all()
 
 
 class TenantOwnedModel(models.Model):
@@ -17,9 +46,12 @@ class TenantOwnedModel(models.Model):
 
     tenant = models.ForeignKey("tenancy.Tenant", on_delete=models.PROTECT)
     objects = TenantQuerySet.as_manager()
+    # Django's relation traversal and deletion collector need an unfiltered base manager.
+    base_objects = models.Manager()
 
     class Meta:
         abstract = True
+        base_manager_name = "base_objects"
 
 
 class Tenant(models.Model):
