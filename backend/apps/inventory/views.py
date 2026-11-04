@@ -66,8 +66,8 @@ class StockAdjustmentView(APIView):
                         )
                     balance = InventoryBalance.objects.for_tenant(tenant_id).get(branch=prior.branch, product=prior.product)
                     return Response({"movement_id": str(prior.id), "quantity_on_hand": str(balance.quantity_on_hand), "replayed": True}, status=status.HTTP_200_OK)
-                balance, _ = InventoryBalance.objects.get_or_create(tenant_id=tenant_id, branch=data["branch"], product=data["product"])
-                InventoryBalance.objects.filter(pk=balance.pk).update(quantity_on_hand=F("quantity_on_hand") + data["quantity_delta"])
+                balance, _ = InventoryBalance.objects.for_tenant(tenant_id).get_or_create(branch=data["branch"], product=data["product"])
+                InventoryBalance.objects.for_tenant(tenant_id).filter(pk=balance.pk).update(quantity_on_hand=F("quantity_on_hand") + data["quantity_delta"])
                 balance.refresh_from_db(fields=["quantity_on_hand", "updated_at"])
                 movement = StockMovement.objects.create(
                     tenant_id=tenant_id, branch=data["branch"], product=data["product"], quantity_delta=data["quantity_delta"],
