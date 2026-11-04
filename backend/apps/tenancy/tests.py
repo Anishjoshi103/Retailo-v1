@@ -58,6 +58,33 @@ class TenantIdentityTests(TestCase):
         self.assertEqual(list(Branch.objects.for_tenant(self.tenant_a.id)), [branch_a])
         self.assertEqual(Branch.objects.for_tenant(None).count(), 0)
 
+
+    def test_default_manager_currently_allows_unscoped_cross_tenant_reads(self):
+        """Characterize current behavior before introducing the warn-only manager."""
+        branch_a = Branch.objects.create(tenant=self.tenant_a, name="A Main", code="MAIN")
+        branch_b = Branch.objects.create(
+            tenant=self.tenant_b,
+            name="B Main",
+            code="MAIN",
+        )
+
+        # This is intentionally a characterization assertion, not the desired
+        # long-term contract. A later enforcement step will replace it.
+        self.assertCountEqual(
+            list(Branch.objects.all()),
+            [branch_a, branch_b],
+        )
+
+    def test_explicit_tenant_scope_excludes_other_tenants(self):
+        branch_a = Branch.objects.create(tenant=self.tenant_a, name="A Main", code="MAIN")
+        Branch.objects.create(tenant=self.tenant_b, name="B Main", code="MAIN")
+
+        self.assertEqual(
+            list(Branch.objects.for_tenant(self.tenant_a.id)),
+            [branch_a],
+        )
+        self.assertEqual(Branch.objects.for_tenant(None).count(), 0)
+
     def test_branch_code_is_unique_only_within_tenant(self):
         Branch.objects.create(tenant=self.tenant_a, name="Main", code="MAIN")
         Branch.objects.create(tenant=self.tenant_b, name="Main", code="MAIN")
