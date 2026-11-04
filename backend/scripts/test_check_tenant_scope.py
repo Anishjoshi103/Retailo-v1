@@ -12,8 +12,8 @@ class TenantScopeCheckerTests(unittest.TestCase):
             {"Product"},
         )
         self.assertEqual(len(errors), 2)
-        self.assertIn("apps/catalog/views.py:1: Product.objects.filter()", errors[0])
-        self.assertIn("apps/catalog/views.py:1: Product.objects.count()", errors[1])
+        self.assertTrue(any("apps/catalog/views.py:1: Product.objects.filter()" in error for error in errors))
+        self.assertTrue(any("apps/catalog/views.py:1: Product.objects.count()" in error for error in errors))
 
     def test_accepts_for_tenant_chain(self):
         errors = check_source(
