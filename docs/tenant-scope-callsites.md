@@ -5,7 +5,7 @@
 | Group | Commit | CI result |
 |---|---|---|
 | Existing call-site changes baseline | `c132b9fb36bc2986cd66d8979657daebbe74f320` | **FAIL** — [run #41815069201](https://github.com/Anishjoshi103/Retailo-v1/actions/runs/41815069201): Ruff, mypy, Django checks, discovery guard and frontend passed; backend suite ran 120 tests with 20 failures and 1 error; coverage gate was not reached. |
-| AST checker, classification and bulk-create regression | Pending | Not run yet |
+| AST checker, classification and bulk-create regression | `9040df765c26c37ed02fe26e1c9ca032f9683c49` | **FAIL** — [run #41817138410](https://github.com/Anishjoshi103/Retailo-v1/actions/runs/41817138410): Ruff, mypy, Django checks and discovery guard passed; checker unit tests had 1 failure (`test_finds_unscoped_manager_calls`, assertion assumed AST traversal order); scope scan and full suite were skipped. Frontend checks passed. Fix: make the unit test order-independent. |
 | InventoryBalance call sites | Pending | Not run yet |
 | Immutability guards | Pending | Not run yet |
 | Serializer validators | Pending | Not run yet |
