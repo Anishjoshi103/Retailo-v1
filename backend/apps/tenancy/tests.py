@@ -1,4 +1,5 @@
 import uuid
+import warnings
 from types import SimpleNamespace
 
 from django.contrib.auth import get_user_model
@@ -74,6 +75,38 @@ class TenantIdentityTests(TestCase):
             list(Branch.objects.all()),
             [branch_a, branch_b],
         )
+
+    def test_unscoped_default_manager_emits_runtime_warning(self):
+        Branch.objects.create(tenant=self.tenant_a, name="A Main", code="MAIN")
+
+        with self.assertWarnsRegex(RuntimeWarning, "Unscoped query on tenant-owned model Branch"):
+            list(Branch.objects.all())
+
+    def test_explicit_unscoped_escape_hatch_requires_reason_and_preserves_behavior(self):
+        branch_a = Branch.objects.create(tenant=self.tenant_a, name="A Main", code="MAIN")
+        branch_b = Branch.objects.create(tenant=self.tenant_b, name="B Main", code="MAIN")
+
+        with self.assertRaisesRegex(ValueError, "explicit reason"):
+            Branch.objects.unscoped(reason=" ")
+
+        with warnings.catch_warnings(record=True) as captured:
+            warnings.simplefilter("always")
+            results = list(Branch.objects.unscoped(reason="cross-tenant audit inventory"))
+
+        self.assertCountEqual(results, [branch_a, branch_b])
+        self.assertEqual(captured, [])
+
+    def test_explicit_tenant_scope_does_not_emit_unscoped_warning(self):
+        Branch.objects.create(tenant=self.tenant_a, name="A Main", code="MAIN")
+
+        with warnings.catch_warnings(record=True) as captured:
+            warnings.simplefilter("always")
+            list(Branch.objects.for_tenant(self.tenant_a.id))
+
+        self.assertEqual(captured, [])
+
+    def test_base_manager_is_plain_unfiltered_django_manager(self):
+        self.assertNotIsInstance(Branch._base_manager, type(Branch.objects.all()))
 
     def test_explicit_tenant_scope_excludes_other_tenants(self):
         branch_a = Branch.objects.create(tenant=self.tenant_a, name="A Main", code="MAIN")
