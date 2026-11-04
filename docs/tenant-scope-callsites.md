@@ -110,3 +110,30 @@ This failing run does not prove coverage of all requested behaviors. Add focused
 ## Status
 
 Discovery evidence is saved from the enforcement-on CI run. This document is a failure inventory, not a claim that call-site migration or behavior-preserving validation is complete.
+
+
+## Static `.objects.` scan (non-test, non-migration code)
+
+A repository code-search pass was run after the suite. This is a search-based scan, not an AST proof; the GitHub code-search interface returns representative matches and can omit additional occurrences, so the scan must be automated locally/CI before declaring completeness.
+
+| File | Finding | Classification / follow-up |
+|---|---|---|
+| `backend/apps/accounts/views.py` | `get_user_model().objects.get(pk=payload["user_id"], is_active=False)` | User identity lookup, not tenant-owned. Keep identity-based and token-constrained. |
+| `backend/apps/tenancy/permissions.py` | `Membership.objects.select_related("tenant").filter(...)` | Membership identity/authorization lookup, not TenantOwnedModel; explicitly filter membership ID and tenant ID. |
+| `backend/apps/tenancy/access.py` | `Branch.objects.for_tenant(membership.tenant_id)` | Already tenant scoped. |
+| `backend/apps/catalog/views.py` | `Product.objects.for_tenant(tenant_id)` | Already tenant scoped. |
+| `backend/apps/catalog/serializers.py` | `Product.objects.for_tenant(tenant_id).filter(sku=value)` | SKU uniqueness validator already tenant scoped. |
+| `backend/apps/inventory/supplier_serializers.py` | `Supplier.objects.for_tenant(context["tenant_id"]).filter(gstin=value)` | GSTIN uniqueness validator already tenant scoped. |
+| `backend/apps/inventory/serializers.py` | `Membership.objects.filter(... tenant_id=tenant_id ...)`; `Branch.objects.for_tenant(tenant_id)` | Membership identity lookup explicitly tenant constrained; Branch scoped. |
+| `backend/apps/inventory/purchase_serializers.py` | Membership identity lookup and Branch scope | Membership is not TenantOwnedModel; branch lookup scoped. |
+| `backend/apps/inventory/return_serializers.py` | `PurchaseReceipt.objects.for_tenant(tenant_id)`; Membership identity lookup | Receipt scoped; membership explicitly constrained. |
+| `backend/apps/inventory/supplier_views.py` | `Supplier.objects.for_tenant(tenant_id)` | Already tenant scoped. |
+| `backend/apps/inventory/return_views.py` | `PurchaseReturn.objects.for_tenant(tenant_id)` | Scoped idempotency lookup; balance write at line 85 was identified above. |
+| `backend/apps/inventory/purchase_views.py` | `PurchaseReceipt.objects.for_tenant(tenant_id)` | Scoped idempotency lookup; balance get/create/update at lines 61–62 were identified above. |
+| `backend/apps/inventory/purchase_invoice_services.py` | `PurchaseInvoice.objects.for_tenant(tenant_id).select_for_update()` | Scoped posting lock; still require atomic/select-for-update behavior test. |
+| `backend/apps/inventory/models.py` | `PurchaseInvoice.objects.filter(...)` in bulk guard | Unscoped tenant-owned lookup; migrate to per-tenant scope. |
+| `backend/apps/tenancy/migrations/0002_branchaccess.py` | Historical `Membership.objects.using(alias)`, `Branch.objects.using(alias)`, `BranchAccess.objects.using(alias).bulk_create(...)` | Migration historical models; preserve alias and historical model managers. Verify fresh `migrate` with enforcement enabled. |
+
+### Runtime coverage gaps not established by the 124-test run
+
+The suite reached adjustment, receipt, return and invoice immutability paths, but did **not** establish successful behavior for all of these ORM operations under enforcement: `update_or_create`, related managers, `select_related` and `prefetch_related` traversal, cascade deletion, or a clean migration from zero. The failing run also did not finish the coverage gate, so no passing coverage percentage can be reported. These remain explicit validation tasks, not assumed-safe behaviors.
