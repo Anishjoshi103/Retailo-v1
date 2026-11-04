@@ -58,8 +58,8 @@ class PurchaseReceiptCreateView(APIView):
                         tenant_id=tenant_id, receipt=receipt, product=line["product"],
                         quantity=line["quantity"], unit_cost=line["unit_cost"],
                     )
-                    balance, _ = InventoryBalance.objects.get_or_create(tenant_id=tenant_id, branch=data["branch"], product=line["product"])
-                    InventoryBalance.objects.filter(pk=balance.pk).update(quantity_on_hand=F("quantity_on_hand") + line["quantity"])
+                    balance, _ = InventoryBalance.objects.for_tenant(tenant_id).get_or_create(branch=data["branch"], product=line["product"])
+                    InventoryBalance.objects.for_tenant(tenant_id).filter(pk=balance.pk).update(quantity_on_hand=F("quantity_on_hand") + line["quantity"])
                     StockMovement.objects.create(
                         tenant_id=tenant_id, branch=data["branch"], product=line["product"], quantity_delta=line["quantity"],
                         reason=StockMovement.Reason.RECEIPT, reference=str(receipt.id),
