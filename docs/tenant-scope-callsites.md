@@ -5,7 +5,7 @@
 | Group | Commit | CI result |
 |---|---|---|
 | Existing call-site changes baseline | `c132b9fb36bc2986cd66d8979657daebbe74f320` | **FAIL** — [run #41815069201](https://github.com/Anishjoshi103/Retailo-v1/actions/runs/41815069201): Ruff, mypy, Django checks, discovery guard and frontend passed; backend suite ran 120 tests with 20 failures and 1 error; coverage gate was not reached. |
-| AST checker, classification and bulk-create regression | `9040df765c26c37ed02fe26e1c9ca032f9683c49` | **FAIL** — [run #41817138410](https://github.com/Anishjoshi103/Retailo-v1/actions/runs/41817138410): Ruff, mypy, Django checks and discovery guard passed; checker unit tests had 1 failure (`test_finds_unscoped_manager_calls`, assertion assumed AST traversal order); scope scan and full suite were skipped. Frontend checks passed. Fix: make the unit test order-independent. |
+| AST checker, classification and bulk-create regression | `9040df765c26c37ed02fe26e1c9ca032f9683c49` + `693c8c90869a6cce112e25fc161b8c22febf2571` | First CI run: checker unit tests failed due to an order-dependent assertion. Fix commit `693c8c9` made the assertion order-independent; its CI confirmed all 5 checker unit tests passed, but the AST scan failed because it included `tests.py` modules (11 test-only call sites). Fix commit `6cd5d8bd9bba3217e41227fb59eebf1080f03537` excludes `tests.py` from scanning. Full suite was skipped in those runs because the scope scan correctly stopped CI. |
 | InventoryBalance call sites | Pending | Not run yet |
 | Immutability guards | Pending | Not run yet |
 | Serializer validators | Pending | Not run yet |
