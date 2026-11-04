@@ -46,12 +46,8 @@ class TenantOwnedModel(models.Model):
 
     tenant = models.ForeignKey("tenancy.Tenant", on_delete=models.PROTECT)
     objects = TenantQuerySet.as_manager()
-    # Django's relation traversal and deletion collector need an unfiltered base manager.
-    base_objects = models.Manager()
-
     class Meta:
         abstract = True
-        base_manager_name = "base_objects"
 
 
 class Tenant(models.Model):
