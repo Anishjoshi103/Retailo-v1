@@ -24,7 +24,7 @@ class PurchaseInvoiceLineQuerySet(TenantQuerySet):
         invoice_ids = {obj.invoice_id for obj in objs}
         if invoice_ids and any(
             PurchaseInvoice.objects.for_tenant(tenant_id).filter(
-                pk__in=[obj.pk for obj in objs if obj.tenant_id == tenant_id],
+                pk__in=[obj.invoice_id for obj in objs if obj.tenant_id == tenant_id],
                 status=PurchaseInvoice.Status.POSTED,
             ).exists()
             for tenant_id in {obj.tenant_id for obj in objs}
@@ -56,7 +56,7 @@ class PurchaseInvoiceAllocationQuerySet(TenantQuerySet):
         invoice_line_ids = {obj.invoice_line_id for obj in objs}
         if invoice_line_ids and any(
             PurchaseInvoiceLine.objects.for_tenant(tenant_id).filter(
-                pk__in=[obj.pk for obj in objs if obj.tenant_id == tenant_id],
+                pk__in=[obj.invoice_line_id for obj in objs if obj.tenant_id == tenant_id],
                 invoice__status=PurchaseInvoice.Status.POSTED,
             ).exists()
             for tenant_id in {obj.tenant_id for obj in objs}
