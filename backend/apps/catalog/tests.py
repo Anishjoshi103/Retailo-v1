@@ -73,7 +73,7 @@ class CatalogApiTests(TestCase):
         payload = {"branch_id": str(self.other_branch.id), "product_id": str(foreign_product.id), "quantity_delta": "1.000"}
         response = self.client.post("/api/v1/inventory/adjustments", payload, format="json", HTTP_IDEMPOTENCY_KEY="foreign-1")
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(StockMovement.objects.count(), 0)
+        self.assertEqual(StockMovement.objects.unscoped(reason="test: assertion/setup across tenants").count(), 0)
 
 
     def test_cashier_cannot_create_products_or_adjust_stock(self):
@@ -97,7 +97,7 @@ class CatalogApiTests(TestCase):
         with self.assertRaises(TypeError):
             movement.delete()
         with self.assertRaises(TypeError):
-            StockMovement.objects.filter(pk=movement.pk).update(note="edited")
+            StockMovement.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=movement.pk).update(note="edited")
 
 
     def test_inventory_balance_list_excludes_cross_tenant_branch_links(self):
@@ -127,7 +127,7 @@ class CatalogApiTests(TestCase):
             format="json", HTTP_IDEMPOTENCY_KEY="unassigned-branch-adjustment",
         )
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(StockMovement.objects.count(), 0)
+        self.assertEqual(StockMovement.objects.unscoped(reason="test: assertion/setup across tenants").count(), 0)
 
 
     def test_inventory_balance_branch_filter_cannot_select_unassigned_branch(self):

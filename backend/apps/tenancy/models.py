@@ -1,5 +1,4 @@
 import uuid
-import warnings
 
 from django.conf import settings
 from django.db import models
@@ -30,15 +29,40 @@ class TenantQuerySet(QuerySet):
         queryset._tenant_scope_escape_reason = reason.strip()
         return queryset
 
-    def _fetch_all(self):
-        if not self._tenant_scope_explicit and self._result_cache is None:
-            warnings.warn(
-                f"Unscoped query on tenant-owned model {self.model.__name__}; "
-                "use .for_tenant(tenant_id) or .unscoped(reason=...) for trusted access.",
-                RuntimeWarning,
-                stacklevel=2,
+    def _require_scope(self):
+        if not self._tenant_scope_explicit:
+            raise RuntimeError(
+                f"Explicit tenant scope required for {self.model.__name__}; "
+                "use .for_tenant(tenant_id) or .unscoped(reason=...) for trusted access."
             )
+
+    def _fetch_all(self):
+        self._require_scope()
         return super()._fetch_all()
+
+    def iterator(self, *args, **kwargs):
+        self._require_scope()
+        return super().iterator(*args, **kwargs)
+
+    def count(self):
+        self._require_scope()
+        return super().count()
+
+    def exists(self):
+        self._require_scope()
+        return super().exists()
+
+    def aggregate(self, *args, **kwargs):
+        self._require_scope()
+        return super().aggregate(*args, **kwargs)
+
+    def update(self, **kwargs):
+        self._require_scope()
+        return super().update(**kwargs)
+
+    def delete(self):
+        self._require_scope()
+        return super().delete()
 
 
 class TenantOwnedModel(models.Model):

@@ -84,8 +84,8 @@ class AuthenticationApiTests(TestCase):
         self.assertFalse(user.is_active)
         membership = Membership.objects.get(user=user)
         self.assertEqual(membership.role, Membership.Role.OWNER)
-        self.assertEqual(Branch.objects.filter(tenant=membership.tenant).count(), 1)
-        self.assertEqual(Branch.objects.get(tenant=membership.tenant).code, "MAIN")
+        self.assertEqual(Branch.objects.unscoped(reason="test: assertion/setup across tenants").filter(tenant=membership.tenant).count(), 1)
+        self.assertEqual(Branch.objects.unscoped(reason="test: assertion/setup across tenants").get(tenant=membership.tenant).code, "MAIN")
         self.assertTrue(BranchAccess.objects.filter(membership=membership, branch__code="MAIN", is_active=True).exists())
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("/auth/verify-email?token=", mail.outbox[0].body)
@@ -125,7 +125,7 @@ class AuthenticationApiTests(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.json()['access']}")
         response = self.client.get("/api/v1/auth/me")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["allowed_branch_ids"], [str(Branch.objects.get(tenant=self.tenant, code="MAIN").id)])
+        self.assertEqual(response.json()["allowed_branch_ids"], [str(Branch.objects.unscoped(reason="test: assertion/setup across tenants").get(tenant=self.tenant, code="MAIN").id)])
 
     def test_branches_endpoint_returns_only_active_branches_for_authenticated_tenant(self):
         main = Branch.objects.create(tenant=self.tenant, name="Main", code="MAIN", is_active=True)

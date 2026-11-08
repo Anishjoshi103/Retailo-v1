@@ -24,7 +24,7 @@ The manager does not currently enforce tenant scoping. This audit does not estab
 ## Planned follow-up
 
 - PR 2: add a warning-only default manager, a named explicit escape hatch, and a plain base manager for Django internals. Inventory and migrate production call sites; keep behavior unchanged.
-- PR 3: enforce explicit tenant scoping after warning inventory is clean and tests prove expected failure for unscoped application queries.
+- PR 3: enforce explicit tenant scoping after warning inventory is clean and tests prove expected failure for unscoped application queries. **Status:** implemented. Unscoped evaluation, count, exists, aggregate, iterator, update and delete raise `RuntimeError`; trusted code must use `.for_tenant(tenant_id)` or `.unscoped(reason=...)`. Reverse-relation managers (e.g. `receipt.lines`) are not scoped automatically and must call `for_tenant` too.
 
 ## Validation boundary
 

@@ -169,18 +169,18 @@ class PurchaseInvoicePostingTests(TestCase):
     def test_posted_invoice_lines_reject_queryset_update_and_delete(self):
         post_purchase_invoice(tenant_id=self.tenant.id, invoice_id=self.invoice.id)
         with self.assertRaises(TypeError):
-            PurchaseInvoiceLine.objects.filter(pk=self.line.pk).update(description_snapshot="tampered")
+            PurchaseInvoiceLine.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=self.line.pk).update(description_snapshot="tampered")
         with self.assertRaises(TypeError):
-            PurchaseInvoiceLine.objects.filter(pk=self.line.pk).delete()
+            PurchaseInvoiceLine.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=self.line.pk).delete()
 
     def test_posted_invoice_allocations_reject_queryset_update_and_delete(self):
         post_purchase_invoice(tenant_id=self.tenant.id, invoice_id=self.invoice.id)
         with self.assertRaises(TypeError):
-            PurchaseInvoiceAllocation.objects.filter(pk=self.allocation.pk).update(
+            PurchaseInvoiceAllocation.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=self.allocation.pk).update(
                 quantity=Decimal("9.000")
             )
         with self.assertRaises(TypeError):
-            PurchaseInvoiceAllocation.objects.filter(pk=self.allocation.pk).delete()
+            PurchaseInvoiceAllocation.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=self.allocation.pk).delete()
 
 
     def test_posted_invoice_lines_reject_bulk_update(self):

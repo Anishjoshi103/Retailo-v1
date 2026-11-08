@@ -49,9 +49,9 @@ class PurchaseInvoicePostingTests(TestCase):
             tenant=self.tenant, supplier=self.supplier, branch=self.branch,
             supplier_name=self.supplier.name, supplier_gstin=self.supplier.gstin,
             supplier_state_code="27", place_of_supply_state_code="27",
-            invoice_number=f"SUP-{PurchaseInvoice.objects.count() + 1}", invoice_date=date(2026, 10, 31),
+            invoice_number=f"SUP-{PurchaseInvoice.objects.unscoped(reason="test: assertion/setup across tenants").count() + 1}", invoice_date=date(2026, 10, 31),
             taxable_total=Decimal("135.00"), tax_total=Decimal("6.76"), total_amount=Decimal("141.76"),
-            idempotency_key=f"invoice-key-{PurchaseInvoice.objects.count() + 1}",
+            idempotency_key=f"invoice-key-{PurchaseInvoice.objects.unscoped(reason="test: assertion/setup across tenants").count() + 1}",
             request_hash="b" * 64, created_by=self.user,
         )
         line = PurchaseInvoiceLine.objects.create(
@@ -121,12 +121,12 @@ class PurchaseInvoicePostingTests(TestCase):
         with self.assertRaisesMessage(TypeError, "Lines on posted purchase invoices are immutable."):
             PurchaseInvoiceLine.objects.bulk_create([line])
 
-        self.assertEqual(invoice.lines.count(), 1)
+        self.assertEqual(invoice.lines.for_tenant(invoice.tenant_id).count(), 1)
 
     def test_bulk_create_rejects_allocation_for_posted_invoice(self):
         invoice = self.create_invoice()
         post_purchase_invoice(tenant_id=self.tenant.id, invoice_id=invoice.id)
-        line = invoice.lines.get()
+        line = invoice.lines.for_tenant(invoice.tenant_id).get()
         allocation = PurchaseInvoiceAllocation(
             tenant=self.tenant,
             invoice_line=line,
@@ -138,7 +138,7 @@ class PurchaseInvoicePostingTests(TestCase):
         with self.assertRaisesMessage(TypeError, "Allocations on posted purchase invoices are immutable."):
             PurchaseInvoiceAllocation.objects.bulk_create([allocation])
 
-        self.assertEqual(line.grn_allocations.count(), 1)
+        self.assertEqual(line.grn_allocations.for_tenant(line.tenant_id).count(), 1)
 
 
     def test_queryset_update_rejects_posted_purchase_invoice(self):
@@ -148,7 +148,7 @@ class PurchaseInvoicePostingTests(TestCase):
         with self.assertRaisesMessage(
             TypeError, "Posted purchase invoices are immutable; use a reversal or credit note."
         ):
-            PurchaseInvoice.objects.filter(pk=invoice.pk).update(total_amount=Decimal("999.99"))
+            PurchaseInvoice.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=invoice.pk).update(total_amount=Decimal("999.99"))
 
         invoice.refresh_from_db()
         self.assertEqual(invoice.total_amount, Decimal("141.76"))
@@ -174,9 +174,9 @@ class PurchaseInvoicePostingTests(TestCase):
         with self.assertRaisesMessage(
             TypeError, "Posted purchase invoices are immutable; use a reversal or credit note."
         ):
-            PurchaseInvoice.objects.filter(pk=invoice.pk).delete()
+            PurchaseInvoice.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=invoice.pk).delete()
 
-        self.assertTrue(PurchaseInvoice.objects.filter(pk=invoice.pk).exists())
+        self.assertTrue(PurchaseInvoice.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=invoice.pk).exists())
 
 
     def test_direct_save_cannot_bypass_purchase_invoice_posting_service(self):
@@ -221,7 +221,7 @@ class PurchaseInvoicePostingTests(TestCase):
             PurchaseInvoice.objects.bulk_create([invoice])
 
         self.assertFalse(
-            PurchaseInvoice.objects.filter(idempotency_key="invoice-bulk-posted").exists()
+            PurchaseInvoice.objects.unscoped(reason="test: assertion/setup across tenants").filter(idempotency_key="invoice-bulk-posted").exists()
         )
 
 
@@ -231,7 +231,7 @@ class PurchaseInvoicePostingTests(TestCase):
         with self.assertRaisesMessage(
             TypeError, "Purchase invoices must be posted through post_purchase_invoice()."
         ):
-            PurchaseInvoice.objects.filter(pk=invoice.pk).update(status=PurchaseInvoice.Status.POSTED)
+            PurchaseInvoice.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=invoice.pk).update(status=PurchaseInvoice.Status.POSTED)
 
         invoice.refresh_from_db()
         self.assertEqual(invoice.status, PurchaseInvoice.Status.DRAFT)

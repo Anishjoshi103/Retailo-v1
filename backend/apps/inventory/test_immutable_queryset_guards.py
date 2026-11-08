@@ -66,24 +66,24 @@ class PostedInventoryQuerySetImmutabilityTests(TestCase):
 
     def test_stock_movement_queryset_update_is_blocked(self):
         with self.assertRaises(TypeError):
-            StockMovement.objects.filter(pk=self.movement.pk).update(note="rewritten")
+            StockMovement.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=self.movement.pk).update(note="rewritten")
 
     def test_stock_movement_queryset_delete_is_blocked(self):
         with self.assertRaises(TypeError):
-            StockMovement.objects.filter(pk=self.movement.pk).delete()
+            StockMovement.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=self.movement.pk).delete()
 
     def test_purchase_receipt_queryset_update_is_blocked(self):
         with self.assertRaises(TypeError):
-            PurchaseReceipt.objects.filter(pk=self.receipt.pk).update(supplier_name="Changed")
+            PurchaseReceipt.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=self.receipt.pk).update(supplier_name="Changed")
 
     def test_purchase_receipt_queryset_delete_is_blocked(self):
         with self.assertRaises(TypeError):
-            PurchaseReceipt.objects.filter(pk=self.receipt.pk).delete()
+            PurchaseReceipt.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=self.receipt.pk).delete()
 
     def test_purchase_receipt_line_queryset_update_is_blocked(self):
         with self.assertRaises(TypeError):
-            PurchaseReceiptLine.objects.filter(pk=self.receipt_line.pk).update(quantity=Decimal("3.000"))
+            PurchaseReceiptLine.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=self.receipt_line.pk).update(quantity=Decimal("3.000"))
 
     def test_purchase_return_queryset_update_is_blocked(self):
         with self.assertRaises(TypeError):
-            PurchaseReturn.objects.filter(pk=self.return_record.pk).update(reason="Changed")
+            PurchaseReturn.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=self.return_record.pk).update(reason="Changed")
