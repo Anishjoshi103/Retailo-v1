@@ -86,7 +86,7 @@ class PurchaseReceiptApiTests(TestCase):
         payload["lines"][0]["product_id"] = str(foreign_product.id)
         response = self.client.post("/api/v1/inventory/receipts", payload, format="json", HTTP_IDEMPOTENCY_KEY="receipt-foreign-product")
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(PurchaseReceipt.objects.count(), 0)
+        self.assertEqual(PurchaseReceipt.objects.unscoped(reason="test: assertion/setup across tenants").count(), 0)
 
     def test_duplicate_product_lines_are_rejected(self):
         payload = self.payload()
@@ -112,13 +112,13 @@ class PurchaseReceiptApiTests(TestCase):
         payload["supplier_id"] = str(supplier.id)
         response = self.client.post("/api/v1/inventory/receipts", payload, format="json", HTTP_IDEMPOTENCY_KEY="receipt-foreign-supplier")
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(PurchaseReceipt.objects.count(), 0)
+        self.assertEqual(PurchaseReceipt.objects.unscoped(reason="test: assertion/setup across tenants").count(), 0)
 
     def _post_receipt_for_return(self, key="receipt-for-return"):
         response = self.client.post("/api/v1/inventory/receipts", self.payload(), format="json", HTTP_IDEMPOTENCY_KEY=key)
         self.assertEqual(response.status_code, 201, response.content)
         receipt = PurchaseReceipt.objects.for_tenant(self.tenant.id).get(pk=response.json()["id"])
-        receipt_line = receipt.lines.get()
+        receipt_line = receipt.lines.for_tenant(receipt.tenant_id).get()
         return receipt, receipt_line
 
     def test_supplier_return_reduces_stock_and_appends_negative_movement(self):
@@ -163,7 +163,7 @@ class PurchaseReceiptApiTests(TestCase):
         self.membership.save(update_fields=["role"])
         response = self.client.post("/api/v1/inventory/receipts", self.payload(), format="json", HTTP_IDEMPOTENCY_KEY="receipt-cashier")
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(PurchaseReceipt.objects.count(), 0)
+        self.assertEqual(PurchaseReceipt.objects.unscoped(reason="test: assertion/setup across tenants").count(), 0)
 
 
     def test_receipt_rejects_unassigned_branch_in_same_tenant(self):
@@ -172,7 +172,7 @@ class PurchaseReceiptApiTests(TestCase):
         payload["branch_id"] = str(unassigned.id)
         response = self.client.post("/api/v1/inventory/receipts", payload, format="json", HTTP_IDEMPOTENCY_KEY="receipt-unassigned-branch")
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(PurchaseReceipt.objects.count(), 0)
+        self.assertEqual(PurchaseReceipt.objects.unscoped(reason="test: assertion/setup across tenants").count(), 0)
 
 
     def test_posted_inventory_records_reject_queryset_update_and_delete(self):
@@ -185,9 +185,9 @@ class PurchaseReceiptApiTests(TestCase):
         movement = StockMovement.objects.for_tenant(self.tenant.id).get()
 
         for queryset in (
-            StockMovement.objects.filter(pk=movement.pk),
-            PurchaseReceipt.objects.filter(pk=receipt.pk),
-            PurchaseReceiptLine.objects.filter(pk=receipt_line.pk),
+            StockMovement.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=movement.pk),
+            PurchaseReceipt.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=receipt.pk),
+            PurchaseReceiptLine.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=receipt_line.pk),
         ):
             with self.subTest(model=queryset.model.__name__, operation="update"):
                 with self.assertRaises(TypeError):
@@ -213,8 +213,8 @@ class PurchaseReceiptApiTests(TestCase):
         return_line = PurchaseReturnLine.objects.for_tenant(self.tenant.id).get()
 
         for queryset in (
-            PurchaseReturn.objects.filter(pk=return_record.pk),
-            PurchaseReturnLine.objects.filter(pk=return_line.pk),
+            PurchaseReturn.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=return_record.pk),
+            PurchaseReturnLine.objects.unscoped(reason="test: assertion/setup across tenants").filter(pk=return_line.pk),
         ):
             with self.subTest(model=queryset.model.__name__, operation="update"):
                 with self.assertRaises(TypeError):

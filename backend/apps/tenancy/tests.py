@@ -60,22 +60,6 @@ class TenantIdentityTests(TestCase):
         self.assertEqual(Branch.objects.for_tenant(None).count(), 0)
 
 
-    def test_default_manager_currently_allows_unscoped_cross_tenant_reads(self):
-        """Characterize current behavior before introducing the warn-only manager."""
-        branch_a = Branch.objects.create(tenant=self.tenant_a, name="A Main", code="MAIN")
-        branch_b = Branch.objects.create(
-            tenant=self.tenant_b,
-            name="B Main",
-            code="MAIN",
-        )
-
-        # This is intentionally a characterization assertion, not the desired
-        # long-term contract. A later enforcement step will replace it.
-        self.assertCountEqual(
-            list(Branch.objects.all()),
-            [branch_a, branch_b],
-        )
-
     def test_unscoped_default_manager_rejects_read_evaluation(self):
         Branch.objects.create(tenant=self.tenant_a, name="A Main", code="MAIN")
 
@@ -108,12 +92,6 @@ class TenantIdentityTests(TestCase):
             list(Branch.objects.unscoped(reason="tenant isolation audit")),
             [branch_a, branch_b],
         )
-
-    def test_unscoped_default_manager_emits_runtime_warning(self):
-        Branch.objects.create(tenant=self.tenant_a, name="A Main", code="MAIN")
-
-        with self.assertWarnsRegex(RuntimeWarning, "Unscoped query on tenant-owned model Branch"):
-            list(Branch.objects.all())
 
     def test_explicit_unscoped_escape_hatch_requires_reason_and_preserves_behavior(self):
         branch_a = Branch.objects.create(tenant=self.tenant_a, name="A Main", code="MAIN")

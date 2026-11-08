@@ -43,7 +43,7 @@ class SupplierApiTests(TestCase):
         self.membership.save(update_fields=["role"])
         response = self.client.post("/api/v1/inventory/suppliers", {"name": "Blocked Supplier"}, format="json")
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(Supplier.objects.count(), 0)
+        self.assertEqual(Supplier.objects.unscoped(reason="test: assertion/setup across tenants").count(), 0)
 
 
     def test_duplicate_gstin_in_same_tenant_returns_validation_error(self):
