@@ -114,6 +114,6 @@ class PurchaseReturnCreateView(APIView):
             "replayed": replayed,
             "lines": [
                 {"receipt_line_id": str(line.receipt_line_id), "product_id": str(line.product_id), "quantity": str(line.quantity)}
-                for line in return_record.lines.all().order_by("id")
+                for line in ReturnLine.objects.for_tenant(return_record.tenant_id).filter(purchase_return=return_record).order_by("id")
             ],
         }

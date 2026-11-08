@@ -86,5 +86,5 @@ class PurchaseReceiptCreateView(APIView):
             "supplier_id": str(receipt.supplier_id) if receipt.supplier_id else None,
             "supplier_name": receipt.supplier_name, "supplier_invoice_number": receipt.supplier_invoice_number,
             "received_at": receipt.received_at.isoformat(), "replayed": replayed,
-            "lines": [{"product_id": str(line.product_id), "quantity": str(line.quantity), "unit_cost": str(line.unit_cost)} for line in receipt.lines.all().order_by("id")],
+            "lines": [{"product_id": str(line.product_id), "quantity": str(line.quantity), "unit_cost": str(line.unit_cost)} for line in PurchaseReceiptLine.objects.for_tenant(receipt.tenant_id).filter(receipt=receipt).order_by("id")],
         }

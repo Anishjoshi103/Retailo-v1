@@ -35,17 +35,17 @@ class PurchaseInvoiceLineQuerySet(TenantQuerySet):
     def bulk_update(self, objs, fields, batch_size=None):
         objs = list(objs)
         object_ids = [obj.pk for obj in objs]
-        if object_ids and self.filter(pk__in=object_ids, invoice__status=PurchaseInvoice.Status.POSTED).exists():
+        if object_ids and self.unscoped(reason="immutability guard inspects only rows already selected by this queryset").filter(pk__in=object_ids, invoice__status=PurchaseInvoice.Status.POSTED).exists():
             raise TypeError("Lines on posted purchase invoices are immutable.")
         return super().bulk_update(objs, fields, batch_size=batch_size)
 
     def update(self, **kwargs):
-        if self.filter(invoice__status=PurchaseInvoice.Status.POSTED).exists():
+        if self.unscoped(reason="immutability guard inspects only rows already selected by this queryset").filter(invoice__status=PurchaseInvoice.Status.POSTED).exists():
             raise TypeError("Lines on posted purchase invoices are immutable.")
         return super().update(**kwargs)
 
     def delete(self):
-        if self.filter(invoice__status=PurchaseInvoice.Status.POSTED).exists():
+        if self.unscoped(reason="immutability guard inspects only rows already selected by this queryset").filter(invoice__status=PurchaseInvoice.Status.POSTED).exists():
             raise TypeError("Lines on posted purchase invoices are immutable.")
         return super().delete()
 
@@ -67,19 +67,19 @@ class PurchaseInvoiceAllocationQuerySet(TenantQuerySet):
     def bulk_update(self, objs, fields, batch_size=None):
         objs = list(objs)
         object_ids = [obj.pk for obj in objs]
-        if object_ids and self.filter(
+        if object_ids and self.unscoped(reason="immutability guard inspects only rows already selected by this queryset").filter(
             pk__in=object_ids, invoice_line__invoice__status=PurchaseInvoice.Status.POSTED
         ).exists():
             raise TypeError("Allocations on posted purchase invoices are immutable.")
         return super().bulk_update(objs, fields, batch_size=batch_size)
 
     def update(self, **kwargs):
-        if self.filter(invoice_line__invoice__status=PurchaseInvoice.Status.POSTED).exists():
+        if self.unscoped(reason="immutability guard inspects only rows already selected by this queryset").filter(invoice_line__invoice__status=PurchaseInvoice.Status.POSTED).exists():
             raise TypeError("Allocations on posted purchase invoices are immutable.")
         return super().update(**kwargs)
 
     def delete(self):
-        if self.filter(invoice_line__invoice__status=PurchaseInvoice.Status.POSTED).exists():
+        if self.unscoped(reason="immutability guard inspects only rows already selected by this queryset").filter(invoice_line__invoice__status=PurchaseInvoice.Status.POSTED).exists():
             raise TypeError("Allocations on posted purchase invoices are immutable.")
         return super().delete()
 
@@ -279,7 +279,9 @@ class PurchaseInvoiceQuerySet(TenantQuerySet):
         return super().bulk_create(objs, **kwargs)
 
     def _posted_records_exist(self, ids=None):
-        queryset = self.filter(status=PurchaseInvoice.Status.POSTED)
+        queryset = self.unscoped(
+            reason="immutability guard inspects only rows already selected by this queryset"
+        ).filter(status=PurchaseInvoice.Status.POSTED)
         if ids is not None:
             queryset = queryset.filter(pk__in=ids)
         return queryset.exists()
