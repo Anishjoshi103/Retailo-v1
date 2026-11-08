@@ -120,6 +120,10 @@ class Branch(TenantOwnedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=120)
     code = models.CharField(max_length=32)
+    # GST identity of this place of business. Blank until an owner/admin sets it;
+    # sales cannot be issued for a branch without a state code.
+    gstin = models.CharField(max_length=15, blank=True)
+    state_code = models.CharField(max_length=2, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

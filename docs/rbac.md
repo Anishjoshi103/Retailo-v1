@@ -23,6 +23,7 @@ This matrix describes the API routes currently registered in `config/urls.py` an
 | `POST /api/v1/inventory/receipts` | Allow | Allow | Allow | Deny | Deny | Active tenant and active branch grant |
 | `POST /api/v1/inventory/returns` | Allow | Allow | Allow | Deny | Deny | Active tenant and receipt's active branch grant |
 | `GET /api/v1/branches` | Read | Read | Read | Read | Read | Only active branches granted to the membership |
+| `PATCH /api/v1/branches/{id}` | Allow | Allow | Deny | Deny | Deny | Active tenant and active branch grant; others receive 404 |
 | `GET /api/v1/auth/me` | Read | Read | Read | Read | Read | Authenticated active membership |
 
 The write decisions above are enforced by the endpoint role checks. Read routes require an authenticated active tenant membership; the branch-scoped routes additionally verify an active `BranchAccess`. A supplied branch identifier is never authorization by itself.
