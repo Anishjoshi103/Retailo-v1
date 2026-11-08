@@ -258,7 +258,10 @@ class BranchesView(APIView):
         if membership is None:
             return api_error_response(code="no_active_store", message="No active store membership.", status_code=status.HTTP_403_FORBIDDEN, request=request)
         branches = authorized_branches(membership).order_by("name", "id")
-        return Response([{"id": str(item.id), "name": item.name, "code": item.code} for item in branches])
+        return Response([
+            {"id": str(item.id), "name": item.name, "code": item.code, "gstin": item.gstin, "state_code": item.state_code}
+            for item in branches
+        ])
 
 
 class MeView(APIView):
