@@ -22,9 +22,13 @@ class PurchaseInvoiceLineQuerySet(TenantQuerySet):
     def bulk_create(self, objs, **kwargs):
         objs = list(objs)
         invoice_ids = {obj.invoice_id for obj in objs}
-        if invoice_ids and PurchaseInvoice.objects.filter(
-            pk__in=invoice_ids, status=PurchaseInvoice.Status.POSTED
-        ).exists():
+        if invoice_ids and any(
+            PurchaseInvoice.objects.for_tenant(tenant_id).filter(
+                pk__in=[obj.invoice_id for obj in objs if obj.tenant_id == tenant_id],
+                status=PurchaseInvoice.Status.POSTED,
+            ).exists()
+            for tenant_id in {obj.tenant_id for obj in objs}
+        ):
             raise TypeError("Lines on posted purchase invoices are immutable.")
         return super().bulk_create(objs, **kwargs)
 
@@ -50,9 +54,13 @@ class PurchaseInvoiceAllocationQuerySet(TenantQuerySet):
     def bulk_create(self, objs, **kwargs):
         objs = list(objs)
         invoice_line_ids = {obj.invoice_line_id for obj in objs}
-        if invoice_line_ids and PurchaseInvoiceLine.objects.filter(
-            pk__in=invoice_line_ids, invoice__status=PurchaseInvoice.Status.POSTED
-        ).exists():
+        if invoice_line_ids and any(
+            PurchaseInvoiceLine.objects.for_tenant(tenant_id).filter(
+                pk__in=[obj.invoice_line_id for obj in objs if obj.tenant_id == tenant_id],
+                invoice__status=PurchaseInvoice.Status.POSTED,
+            ).exists()
+            for tenant_id in {obj.tenant_id for obj in objs}
+        ):
             raise TypeError("Allocations on posted purchase invoices are immutable.")
         return super().bulk_create(objs, **kwargs)
 
@@ -347,7 +355,7 @@ class PurchaseInvoice(TenantOwnedModel):
 
     def save(self, *args, **kwargs):
         if not self._state.adding:
-            existing = type(self).objects.filter(pk=self.pk).first()
+            existing = type(self).objects.for_tenant(self.tenant_id).filter(pk=self.pk).first()
             if existing and existing.status == self.Status.POSTED:
                 raise TypeError("Posted purchase invoices are immutable; use a reversal or credit note.")
             if (

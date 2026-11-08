@@ -7,6 +7,7 @@ on:
       - main
       - "feat/**"
       - "chore/**"
+      - "refactor/**"
   workflow_dispatch:
 
 permissions:
@@ -61,6 +62,12 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: config.settings.ci
         run: python scripts/check_test_discovery.py
+
+      - name: Test tenant scope AST checker
+        run: python -m unittest scripts.test_check_tenant_scope -v
+
+      - name: Check tenant scope AST guard
+        run: python scripts/check_tenant_scope.py
 
       - name: Unit tests with coverage
         env:

@@ -194,3 +194,33 @@ class PurchaseInvoicePostingTests(TestCase):
         self.allocation.quantity = Decimal("9.000")
         with self.assertRaises(TypeError):
             PurchaseInvoiceAllocation.objects.bulk_update([self.allocation], ["quantity"])
+
+    def test_bulk_create_line_for_posted_invoice_is_rejected(self):
+        post_purchase_invoice(tenant_id=self.tenant.id, invoice_id=self.invoice.id)
+        candidate = PurchaseInvoiceLine(
+            tenant=self.tenant,
+            invoice=self.invoice,
+            product=self.product,
+            description_snapshot="Attempted late line",
+            hsn_code="1006",
+            quantity=Decimal("1.000"),
+            unit_price=Decimal("10.0000"),
+            discount_amount=Decimal("0.00"),
+            taxable_value=Decimal("10.00"),
+            gst_rate=Decimal("18.00"),
+            cgst_amount=Decimal("0.90"),
+            sgst_amount=Decimal("0.90"),
+            igst_amount=Decimal("0.00"),
+            total_tax=Decimal("1.80"),
+            total_amount=Decimal("11.80"),
+        )
+        # A newly constructed line has a primary key before INSERT. The guard must
+        # inspect its parent invoice status, not infer safety from the line's PK.
+        self.assertIsNotNone(candidate.pk)
+        self.assertFalse(
+            PurchaseInvoiceLine.objects.for_tenant(self.tenant.id)
+            .filter(pk=candidate.pk)
+            .exists()
+        )
+        with self.assertRaisesMessage(TypeError, "Lines on posted purchase invoices are immutable."):
+            PurchaseInvoiceLine.objects.for_tenant(self.tenant.id).bulk_create([candidate])
