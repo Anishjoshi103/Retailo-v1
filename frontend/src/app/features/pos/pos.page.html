@@ -1,0 +1,156 @@
+<section class="pos" aria-labelledby="pos-title">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">POINT OF SALE</p>
+      <h1 id="pos-title">Billing</h1>
+      <p class="intro">Prices include GST. The invoice shows the tax split.</p>
+    </div>
+  </header>
+
+  @if (completedSale(); as sale) {
+    <div class="card receipt" role="status">
+      <h2>Sale complete</h2>
+      <p class="invoice-number">{{ sale.invoice_number }}</p>
+      @if (sale.replayed) {
+        <p class="muted">This sale had already been recorded; no second invoice was created.</p>
+      }
+      <dl class="summary">
+        <div><dt>Date</dt><dd>{{ sale.invoice_date }}</dd></div>
+        <div><dt>Taxable value</dt><dd>₹{{ sale.taxable_total }}</dd></div>
+        <div><dt>GST</dt><dd>₹{{ sale.total_tax }}</dd></div>
+        <div><dt>Round off</dt><dd>₹{{ sale.round_off }}</dd></div>
+        <div class="grand"><dt>Total paid</dt><dd>₹{{ sale.grand_total }}</dd></div>
+      </dl>
+      <ul class="paid-list">
+        @for (payment of sale.payments; track $index) {
+          <li>{{ payment.method }} · ₹{{ payment.amount }}@if (payment.reference) { · {{ payment.reference }} }</li>
+        }
+      </ul>
+      <button type="button" class="primary" (click)="newSale()">New sale</button>
+    </div>
+  } @else {
+    <div class="layout">
+      <div class="card add-items">
+        <h2>Add items</h2>
+        <form class="search" (ngSubmit)="search()">
+          <label>
+            <span>Scan or search</span>
+            <input name="search" type="search" autocomplete="off" placeholder="Barcode, SKU or name"
+              [ngModel]="searchText()" (ngModelChange)="searchText.set($event)" />
+          </label>
+          <button type="submit" class="primary" [disabled]="searching()">Find</button>
+        </form>
+        @if (searchError()) {
+          <div class="notice notice-error" role="alert">{{ searchError() }}</div>
+        }
+        @if (searching()) {
+          <p class="muted" role="status">Searching…</p>
+        }
+        @if (results().length > 0) {
+          <ul class="results">
+            @for (product of results(); track product.id) {
+              <li>
+                <div>
+                  <span class="name">{{ product.name }}</span>
+                  <span class="meta">{{ product.sku }} · {{ product.gst_rate }}% GST</span>
+                </div>
+                <span class="price">₹{{ product.selling_price }}</span>
+                <button type="button" class="secondary" (click)="addProduct(product)">Add</button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      <div class="card sale">
+        <h2>Current sale</h2>
+        @if (cart().length === 0) {
+          <p class="muted">No items yet. Scan or search to add products.</p>
+        } @else {
+          <ul class="cart">
+            @for (line of pricedItems(); track line.item.product.id) {
+              <li>
+                <div class="cart-main">
+                  <span class="name">{{ line.item.product.name }}</span>
+                  <span class="meta">₹{{ line.item.product.selling_price }} / {{ line.item.product.unit }}</span>
+                </div>
+                <label class="qty">
+                  <span class="sr-only">Quantity of {{ line.item.product.name }}</span>
+                  <input type="text" inputmode="decimal" [class.invalid]="!line.valid"
+                    [attr.aria-invalid]="!line.valid" [value]="line.item.quantityText"
+                    (input)="setQuantity(line.item.product.id, inputValue($event))" />
+                </label>
+                <span class="line-total">₹{{ lineTotal(line.grossPaise) }}</span>
+                <button type="button" class="text-button" (click)="removeItem(line.item.product.id)"
+                  [attr.aria-label]="'Remove ' + line.item.product.name">Remove</button>
+              </li>
+            }
+          </ul>
+          @if (!cartValid()) {
+            <p class="notice notice-error" role="alert">Enter a quantity above zero, with up to 3 decimals, for every item.</p>
+          }
+        }
+
+        <dl class="totals">
+          <div><dt>Items total</dt><dd>₹{{ money(totals().exactPaise) }}</dd></div>
+          <div><dt>Round off</dt><dd>₹{{ money(totals().roundOffPaise) }}</dd></div>
+          <div class="grand"><dt>Total payable</dt><dd>₹{{ money(totals().grandTotalPaise) }}</dd></div>
+        </dl>
+
+        <label class="customer">
+          <span>Customer name (optional)</span>
+          <input type="text" maxlength="180" [value]="customerName()" (input)="customerName.set(inputValue($event))" />
+        </label>
+
+        <h3>Payment</h3>
+        @for (row of payments(); track row.id) {
+          <div class="payment-row">
+            <label>
+              <span class="sr-only">Payment method</span>
+              <select [value]="row.method" (change)="setPaymentMethod(row.id, inputValue($event))">
+                @for (method of paymentMethods; track method.value) {
+                  <option [value]="method.value" [selected]="method.value === row.method">{{ method.label }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              <span class="sr-only">Amount</span>
+              <input type="text" inputmode="decimal" placeholder="Amount" [value]="row.amountText"
+                (input)="setPaymentAmount(row.id, inputValue($event))" />
+            </label>
+            <label>
+              <span class="sr-only">Reference</span>
+              <input type="text" placeholder="Reference (optional)" maxlength="120" [value]="row.reference"
+                (input)="setPaymentReference(row.id, inputValue($event))" />
+            </label>
+            @if (payments().length > 1) {
+              <button type="button" class="text-button" (click)="removePayment(row.id)">Remove</button>
+            }
+          </div>
+        }
+        <button type="button" class="text-button" (click)="addPayment()">+ Split payment</button>
+        @if (cart().length > 0) {
+          @if (remainingPaise() > 0) {
+            <p class="notice" role="status">₹{{ money(remainingPaise()) }} still to collect.</p>
+          } @else if (remainingPaise() < 0) {
+            <p class="notice notice-error" role="alert">Payments are ₹{{ money(-remainingPaise()) }} over the total. Enter the amount applied to the bill.</p>
+          }
+        }
+
+        @if (canOverrideStock()) {
+          <label class="check">
+            <input type="checkbox" [checked]="allowBelowStock()" (change)="allowBelowStock.set(!allowBelowStock())" />
+            <span>Allow selling below available stock (manager override)</span>
+          </label>
+        }
+
+        @if (submitError()) {
+          <div class="notice notice-error" role="alert">{{ submitError() }}</div>
+        }
+        <button type="button" class="primary complete" [disabled]="!canSubmit()" (click)="submit()">
+          {{ submitting() ? 'Completing…' : 'Complete sale' }}
+        </button>
+      </div>
+    </div>
+  }
+</section>

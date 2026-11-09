@@ -2,12 +2,13 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { roleBranchGuard } from './core/auth/role-branch.guard';
 
-const featurePaths = ['inventory', 'pos', 'gst', 'reports', 'settings'];
+const featurePaths = ['inventory', 'gst', 'reports', 'settings'];
 export const routes: Routes = [
   { path: 'auth', loadChildren: () => import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES) },
   { path: '', canActivate: [authGuard], loadComponent: () => import('./layout/shell/shell.component').then((m) => m.ShellComponent), children: [
     { path: '', pathMatch: 'full', loadComponent: () => import('./features/home/home.page').then((m) => m.HomePage) },
     { path: 'catalog', canActivate: [roleBranchGuard], data: { title: 'Catalog' }, loadComponent: () => import('./features/catalog/catalog.page').then((m) => m.CatalogPage) },
+    { path: 'pos', canActivate: [roleBranchGuard], data: { title: 'Point of sale', branchRequired: true, roles: ['owner', 'admin', 'manager', 'cashier'] }, loadComponent: () => import('./features/pos/pos.page').then((m) => m.PosPage) },
     ...featurePaths.map((path) => ({ path, canActivate: [roleBranchGuard], data: { title: featureTitle(path), ...(path === 'reports' ? { roles: ['owner', 'admin', 'manager'] } : {}), ...(path === 'settings' ? { roles: ['owner', 'admin'] } : {}) }, loadComponent: () => import('./features/placeholder/feature-placeholder.page').then((m) => m.FeaturePlaceholderPage) }))
   ] },
   { path: '**', redirectTo: '' }
