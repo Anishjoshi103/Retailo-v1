@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.test import SimpleTestCase
 
-from apps.gst.tax import calculate_gst
+from apps.gst.tax import calculate_gst, calculate_inclusive_gst
 
 
 class CalculateGstTests(SimpleTestCase):
@@ -69,3 +69,45 @@ class CalculateGstTests(SimpleTestCase):
             with self.subTest(value=value):
                 with self.assertRaises(ValueError):
                     calculate_gst(value, "18.00", "27", "27")
+
+
+class CalculateInclusiveGstTests(SimpleTestCase):
+    def test_intra_state_backs_tax_out_and_keeps_cgst_equal_to_sgst(self):
+        result = calculate_inclusive_gst(Decimal("118.00"), Decimal("18.00"), "27", "27")
+        self.assertEqual(result["supply_type"], "intra_state")
+        self.assertEqual(
+            (result["taxable_value"], result["cgst_amount"], result["sgst_amount"], result["igst_amount"]),
+            ("100.00", "9.00", "9.00", "0.00"),
+        )
+        self.assertEqual((result["total_tax"], result["total_amount"]), ("18.00", "118.00"))
+
+    def test_odd_paisa_stays_in_taxable_value(self):
+        result = calculate_inclusive_gst(Decimal("200.00"), Decimal("18.00"), "27", "27")
+        self.assertEqual(
+            (result["taxable_value"], result["cgst_amount"], result["sgst_amount"], result["total_amount"]),
+            ("169.50", "15.25", "15.25", "200.00"),
+        )
+
+    def test_inter_state_uses_igst_only(self):
+        result = calculate_inclusive_gst(Decimal("118.00"), Decimal("18.00"), "27", "29")
+        self.assertEqual(result["supply_type"], "inter_state")
+        self.assertEqual(
+            (result["taxable_value"], result["cgst_amount"], result["sgst_amount"], result["igst_amount"], result["igst_rate"]),
+            ("100.00", "0.00", "0.00", "18.00", "18.00"),
+        )
+
+    def test_zero_rate_has_no_tax(self):
+        result = calculate_inclusive_gst("50.00", "0", "27", "27")
+        self.assertEqual((result["taxable_value"], result["total_tax"], result["total_amount"]), ("50.00", "0.00", "50.00"))
+
+    def test_rejects_invalid_input(self):
+        for args in (
+            (Decimal("-1"), Decimal("18"), "27", "27"),
+            (Decimal("10"), Decimal("101"), "27", "27"),
+            (Decimal("10"), Decimal("-1"), "27", "27"),
+            (10.0, Decimal("18"), "27", "27"),
+            (Decimal("10"), Decimal("18"), "7", "27"),
+            (Decimal("10"), Decimal("18"), "27", "AB"),
+        ):
+            with self.assertRaises(ValueError, msg=args):
+                calculate_inclusive_gst(*args)

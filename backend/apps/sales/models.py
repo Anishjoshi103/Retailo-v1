@@ -3,6 +3,7 @@ from typing import ClassVar
 
 from django.conf import settings
 from django.db import models
+from django.db.models.functions import Round
 
 from apps.tenancy.models import TenantOwnedModel, TenantQuerySet
 
@@ -80,14 +81,18 @@ class Sale(TenantOwnedModel):
                 name="ck_sale_amounts_nonnegative",
             ),
             models.CheckConstraint(
+                # Round(.., 2): SQLite stores decimals as floats, so an exact sum can differ in
+                # the last bit; rounding to paise makes the check behave the same as on SQL Server.
                 condition=models.Q(
-                    total_tax=models.F("cgst_total") + models.F("sgst_total") + models.F("igst_total")
+                    total_tax=Round(models.F("cgst_total") + models.F("sgst_total") + models.F("igst_total"), 2)
                 ),
                 name="ck_sale_tax_components_sum",
             ),
             models.CheckConstraint(
                 condition=models.Q(
-                    grand_total=models.F("taxable_total") + models.F("total_tax") + models.F("round_off")
+                    grand_total=Round(
+                        models.F("taxable_total") + models.F("total_tax") + models.F("round_off"), 2
+                    )
                 ),
                 name="ck_sale_grand_total_sum",
             ),
@@ -142,6 +147,7 @@ class SaleLine(_SaleChildGuard, TenantOwnedModel):
     hsn_code = models.CharField(max_length=8, blank=True)
     unit = models.CharField(max_length=8)
     quantity = models.DecimalField(max_digits=14, decimal_places=3)
+    # Tax-inclusive (MRP-style) unit price as sold; taxable_value is the tax-exclusive part.
     unit_price = models.DecimalField(max_digits=12, decimal_places=2)
     gst_rate = models.DecimalField(max_digits=5, decimal_places=2)
     taxable_value = models.DecimalField(max_digits=14, decimal_places=2)
@@ -167,8 +173,10 @@ class SaleLine(_SaleChildGuard, TenantOwnedModel):
             ),
             models.CheckConstraint(
                 condition=models.Q(
-                    line_total=models.F("taxable_value") + models.F("cgst_amount")
-                    + models.F("sgst_amount") + models.F("igst_amount")
+                    line_total=Round(
+                        models.F("taxable_value") + models.F("cgst_amount")
+                        + models.F("sgst_amount") + models.F("igst_amount"), 2
+                    )
                 ),
                 name="ck_sale_line_total_sum",
             ),

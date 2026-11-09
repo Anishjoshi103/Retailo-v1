@@ -108,3 +108,61 @@ def calculate_gst(
         "total_amount": _money_string(taxable + total_tax),
         "supply_type": supply_type,
     }
+
+
+def calculate_inclusive_gst(
+    gross_amount: Decimal | str,
+    gst_rate: Decimal | str,
+    supplier_state_code: str,
+    place_of_supply_state_code: str,
+) -> GstBreakdown:
+    """Split a tax-inclusive (MRP-style) amount into taxable value and GST.
+
+    ``total_amount`` always equals the gross amount exactly. For intra-state supply the
+    tax is split into equal CGST and SGST halves (each rounded to paise with
+    ROUND_HALF_UP) and any leftover paisa stays in the taxable value, so CGST == SGST.
+    For inter-state supply the whole tax is IGST.
+    """
+    gross = _decimal(gross_amount, "gross_amount")
+    rate = _decimal(gst_rate, "gst_rate")
+    if gross < 0:
+        raise ValueError("gross_amount cannot be negative.")
+    if rate < 0 or rate > 100:
+        raise ValueError("gst_rate must be between 0 and 100.")
+    gross = _money(gross)
+    for field_name, code in (
+        ("supplier_state_code", supplier_state_code),
+        ("place_of_supply_state_code", place_of_supply_state_code),
+    ):
+        if not isinstance(code, str) or len(code) != 2 or not code.isdigit():
+            raise ValueError(f"{field_name} must be a two-digit state code string.")
+
+    raw_tax = gross * rate / (HUNDRED + rate)
+    if supplier_state_code == place_of_supply_state_code:
+        half = _money(raw_tax / Decimal("2"))
+        cgst_amount = sgst_amount = half
+        igst_amount = ZERO
+        cgst_rate = sgst_rate = rate / Decimal("2")
+        igst_rate = ZERO
+        supply_type = "intra_state"
+    else:
+        cgst_amount = sgst_amount = ZERO
+        igst_amount = _money(raw_tax)
+        cgst_rate = sgst_rate = ZERO
+        igst_rate = rate
+        supply_type = "inter_state"
+    total_tax = cgst_amount + sgst_amount + igst_amount
+    taxable = gross - total_tax
+    return {
+        "taxable_value": _money_string(taxable),
+        "gst_rate": format(rate, ".2f"),
+        "cgst_rate": format(cgst_rate, ".2f"),
+        "sgst_rate": format(sgst_rate, ".2f"),
+        "igst_rate": format(igst_rate, ".2f"),
+        "cgst_amount": _money_string(cgst_amount),
+        "sgst_amount": _money_string(sgst_amount),
+        "igst_amount": _money_string(igst_amount),
+        "total_tax": _money_string(total_tax),
+        "total_amount": _money_string(gross),
+        "supply_type": supply_type,
+    }

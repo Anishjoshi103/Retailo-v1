@@ -52,7 +52,7 @@ class SalePostingTests(TestCase):
         body = {
             "branch_id": str(self.branch.id),
             "lines": [{"product_id": str(self.rice.id), "quantity": "2"}],
-            "payments": [{"method": "cash", "amount": "236.00"}],
+            "payments": [{"method": "cash", "amount": "200.00"}],
         }
         body.update(overrides)
         return body
@@ -65,10 +65,10 @@ class SalePostingTests(TestCase):
         self.assertEqual(response.status_code, 201, response.content)
         body = response.json()
         self.assertEqual(body["invoice_number"], "INV-MAIN-000001")
-        self.assertEqual((body["taxable_total"], body["cgst_total"], body["sgst_total"], body["igst_total"], body["grand_total"], body["round_off"]), ("200.00", "18.00", "18.00", "0.00", "236.00", "0.00"))
+        self.assertEqual((body["taxable_total"], body["cgst_total"], body["sgst_total"], body["igst_total"], body["grand_total"], body["round_off"]), ("169.50", "15.25", "15.25", "0.00", "200.00", "0.00"))
         self.assertEqual(body["lines"][0]["sku"], "RICE-1")
         self.assertEqual(body["lines"][0]["hsn_code"], "1006")
-        self.assertEqual(body["payments"], [{"method": "cash", "amount": "236.00", "reference": ""}])
+        self.assertEqual(body["payments"], [{"method": "cash", "amount": "200.00", "reference": ""}])
         self.assertFalse(body["replayed"])
         self.assertEqual(self.on_hand(self.rice), Decimal("8.000"))
         movement = StockMovement.objects.for_tenant(self.tenant.id).get(reason="sale")
@@ -78,16 +78,16 @@ class SalePostingTests(TestCase):
         client = self.client_for("manager")
         body = self.payload(
             lines=[{"product_id": str(self.rice.id), "quantity": "2"}, {"product_id": str(self.soap.id), "quantity": "3"}],
-            payments=[{"method": "cash", "amount": "300.00"}, {"method": "upi", "amount": "41.00", "reference": "UPI-9"}],
+            payments=[{"method": "cash", "amount": "250.00"}, {"method": "upi", "amount": "50.00", "reference": "UPI-9"}],
         )
         first = self.post(client, body, key="sale-a")
         self.assertEqual(first.status_code, 201, first.content)
-        self.assertEqual((first.json()["grand_total"], first.json()["round_off"]), ("341.00", "0.01"))
+        self.assertEqual((first.json()["grand_total"], first.json()["round_off"]), ("300.00", "0.01"))
         second = self.post(client, key="sale-b")
         self.assertEqual(second.json()["invoice_number"], "INV-MAIN-000002")
 
     def test_client_cannot_set_prices(self):
-        body = self.payload(lines=[{"product_id": str(self.rice.id), "quantity": "1", "unit_price": "1.00"}], payments=[{"method": "cash", "amount": "118.00"}])
+        body = self.payload(lines=[{"product_id": str(self.rice.id), "quantity": "1", "unit_price": "1.00"}], payments=[{"method": "cash", "amount": "100.00"}])
         response = self.post(self.client_for("cashier"), body)
         self.assertEqual(response.status_code, 201, response.content)
         self.assertEqual(response.json()["lines"][0]["unit_price"], "100.00")
@@ -105,7 +105,7 @@ class SalePostingTests(TestCase):
     def test_same_key_with_different_sale_conflicts(self):
         client = self.client_for("cashier")
         self.post(client)
-        other = self.payload(lines=[{"product_id": str(self.rice.id), "quantity": "1"}], payments=[{"method": "cash", "amount": "118.00"}])
+        other = self.payload(lines=[{"product_id": str(self.rice.id), "quantity": "1"}], payments=[{"method": "cash", "amount": "100.00"}])
         self.assertEqual(self.post(client, other).status_code, 409)
         self.assertEqual(self.sale_count(), 1)
 
@@ -118,7 +118,7 @@ class SalePostingTests(TestCase):
         self.assertEqual(self.sale_count(), 0)
 
     def test_insufficient_stock_blocks_sale_and_changes_nothing(self):
-        body = self.payload(lines=[{"product_id": str(self.rice.id), "quantity": "11"}], payments=[{"method": "cash", "amount": "1298.00"}])
+        body = self.payload(lines=[{"product_id": str(self.rice.id), "quantity": "11"}], payments=[{"method": "cash", "amount": "1100.00"}])
         client = self.client_for("cashier")
         response = self.post(client, body)
         self.assertEqual(response.status_code, 400, response.content)
@@ -133,7 +133,7 @@ class SalePostingTests(TestCase):
         self.assertEqual(self.sale_count(), 0)
 
     def test_manager_override_sells_below_stock_and_notes_it(self):
-        body = self.payload(lines=[{"product_id": str(self.rice.id), "quantity": "11"}], payments=[{"method": "cash", "amount": "1298.00"}], allow_negative_stock=True)
+        body = self.payload(lines=[{"product_id": str(self.rice.id), "quantity": "11"}], payments=[{"method": "cash", "amount": "1100.00"}], allow_negative_stock=True)
         response = self.post(self.client_for("manager"), body)
         self.assertEqual(response.status_code, 201, response.content)
         self.assertEqual(self.on_hand(self.rice), Decimal("-1.000"))
@@ -161,7 +161,7 @@ class SalePostingTests(TestCase):
 
     def test_payments_must_total_the_invoice(self):
         client = self.client_for("cashier")
-        for amount in ("235.00", "237.00"):
+        for amount in ("199.00", "201.00"):
             response = self.post(client, self.payload(payments=[{"method": "cash", "amount": amount}]), key=f"pay-{amount}")
             self.assertEqual(response.status_code, 400, amount)
         self.assertEqual(self.sale_count(), 0)

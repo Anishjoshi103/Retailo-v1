@@ -47,7 +47,7 @@ class SaleReadTests(TestCase):
         response = client.post("/api/v1/sales", {
             "branch_id": str(branch.id),
             "lines": [{"product_id": str(self.product.id), "quantity": "1"}],
-            "payments": [{"method": "cash", "amount": "118.00"}],
+            "payments": [{"method": "cash", "amount": "100.00"}],
         }, format="json", HTTP_IDEMPOTENCY_KEY=key)
         self.assertEqual(response.status_code, 201, response.content)
         return response.json()
@@ -71,7 +71,7 @@ class SaleReadTests(TestCase):
         cashier_rows = self.cashier.get("/api/v1/sales").json()
         self.assertEqual({r["id"] for r in cashier_rows}, {first["id"], third["id"]})
         self.assertNotIn("lines", cashier_rows[0])
-        self.assertEqual(cashier_rows[0]["grand_total"], "118.00")
+        self.assertEqual(cashier_rows[0]["grand_total"], "100.00")
 
     def test_other_stores_sales_are_never_listed_or_fetched(self):
         foreign = self.old_sale(self.other_tenant, self.other_branch, "INV-MAIN-000001", date(2026, 1, 1))
@@ -112,8 +112,8 @@ class SaleReadTests(TestCase):
         body = self.cashier.get(f"/api/v1/sales/{sale['id']}").json()
         self.assertEqual(body["invoice_number"], "INV-MAIN-000001")
         self.assertEqual(body["lines"][0]["sku"], "RICE-1")
-        self.assertEqual(body["payments"], [{"method": "cash", "amount": "118.00", "reference": ""}])
-        self.assertEqual((body["cgst_total"], body["sgst_total"], body["seller_state_code"]), ("9.00", "9.00", "27"))
+        self.assertEqual(body["payments"], [{"method": "cash", "amount": "100.00", "reference": ""}])
+        self.assertEqual((body["cgst_total"], body["sgst_total"], body["seller_state_code"]), ("7.63", "7.63", "27"))
         self.assertNotIn("replayed", body)
 
     def test_detail_is_not_found_for_ungranted_branch_and_unknown_id(self):
