@@ -17,4 +17,13 @@ describe('application routes', () => {
     expect(children.find((route) => route.path === 'settings')?.canActivate).toContain(roleBranchGuard);
     expect(children.find((route) => route.path === 'reports')?.canActivate).toContain(roleBranchGuard);
   });
+
+  it('serves the billing screen at pos for selling roles only, and requires a branch', () => {
+    const shell = routes.find((route) => route.path === '');
+    const pos = shell?.children?.find((route) => route.path === 'pos');
+    expect(pos?.canActivate).toContain(roleBranchGuard);
+    expect(pos?.data?.['branchRequired']).toBe(true);
+    expect(pos?.data?.['roles']).toEqual(['owner', 'admin', 'manager', 'cashier']);
+    expect(pos?.loadComponent).toBeDefined();
+  });
 });
