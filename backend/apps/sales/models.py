@@ -124,7 +124,7 @@ class _SaleChildGuard:
             raise TypeError("Posted sales records are immutable.")
         if self.sale.tenant_id != self.tenant_id:
             raise ValueError("A sale record must belong to the same tenant as its sale.")
-        super().save(*args, **kwargs)  # type: ignore[misc]
+        super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         raise TypeError("Posted sales records are immutable.")
