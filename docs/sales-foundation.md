@@ -41,8 +41,6 @@ Format `INV-<BRANCHCODE>-<6 digit serial>`, for example `INV-MAIN-000001`.
   branch's sequence. A failed sale rolls the counter back, so numbers are never skipped.
 - Allocation outside a transaction raises.
 
-## Planned in the posting PR
+## Posting
 
-Idempotent `POST /sales`; tax via `apps.gst`; refusal when the branch has no state code
-or an unusable code; stock deduction that blocks when stock is short, with a
-manager/admin/owner override; cashier access in the RBAC matrix.
+See `sales-posting.md` for `POST /api/v1/sales`.

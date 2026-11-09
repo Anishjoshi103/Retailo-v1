@@ -7,7 +7,7 @@ This matrix describes the API routes currently registered in `config/urls.py` an
 - **OWNER** — full tenant operational access; owner-only administration may be added explicitly.
 - **ADMIN** — tenant operational access, except owner-only actions where introduced.
 - **MANAGER** — day-to-day catalogue, inventory, and purchasing operations.
-- **CASHIER** — read access to currently available catalogue/inventory/supplier lists; no current write endpoint grants cashier mutation access.
+- **CASHIER** — read access to currently available catalogue/inventory/supplier lists, and may post sales (`POST /api/v1/sales`); no other write endpoint grants cashier mutation access.
 - **ACCOUNTANT** — read-only access to currently available catalogue/inventory/supplier lists; no current write endpoint grants accountant mutation access.
 
 ## Tenant API role matrix
@@ -22,6 +22,7 @@ This matrix describes the API routes currently registered in `config/urls.py` an
 | `POST /api/v1/inventory/suppliers` | Allow | Allow | Allow | Deny | Deny | Active tenant |
 | `POST /api/v1/inventory/receipts` | Allow | Allow | Allow | Deny | Deny | Active tenant and active branch grant |
 | `POST /api/v1/inventory/returns` | Allow | Allow | Allow | Deny | Deny | Active tenant and receipt's active branch grant |
+| `POST /api/v1/sales` | Allow | Allow | Allow | Allow | Deny | Active tenant and active branch grant. `allow_negative_stock` (sell below on-hand stock) additionally requires owner, admin or manager; cashiers receive 403 |
 | `GET /api/v1/branches` | Read | Read | Read | Read | Read | Only active branches granted to the membership |
 | `PATCH /api/v1/branches/{id}` | Allow | Allow | Deny | Deny | Deny | Active tenant and active branch grant; others receive 404 |
 | `GET /api/v1/auth/me` | Read | Read | Read | Read | Read | Authenticated active membership |
