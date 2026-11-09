@@ -1,28 +1,81 @@
 import hashlib
 import json
+import uuid
+from datetime import date
 from decimal import Decimal
 
 from django.db import IntegrityError, transaction
 from django.db.models import F
 from django.utils import timezone
 from rest_framework import permissions, status
-from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
+from rest_framework.exceptions import (
+    APIException,
+    NotFound,
+    PermissionDenied,
+    ValidationError,
+)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.inventory.models import InventoryBalance, StockMovement
 from apps.sales.models import Sale, SaleLine, SalePayment
 from apps.sales.numbering import InvoiceNumberError, allocate_invoice_number
+from apps.sales.presenters import serialize_sale, serialize_sale_summary
 from apps.sales.pricing import price_sale
 from apps.sales.serializers import SaleInputSerializer
-from apps.tenancy.permissions import require_membership_role
+from apps.tenancy.access import authorized_branches, membership_can_access_branch
+from apps.tenancy.permissions import active_tenant_membership, require_membership_role
 
 SELLING_ROLES = {"owner", "admin", "manager", "cashier"}
 STOCK_OVERRIDE_ROLES = {"owner", "admin", "manager"}
+DEFAULT_PAGE_SIZE = 50
+MAX_PAGE_SIZE = 200
 
 
-class SaleCreateView(APIView):
+class SaleListCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """List sales for the caller's granted branches, newest first."""
+        membership = active_tenant_membership(request)
+        params = request.query_params
+        queryset = Sale.objects.for_tenant(membership.tenant_id).filter(
+            branch__in=authorized_branches(membership)
+        )
+        branch_id = params.get("branch_id")
+        if branch_id:
+            try:
+                uuid.UUID(branch_id)
+            except ValueError as exc:
+                raise ValidationError({"branch_id": "Enter a valid branch id."}) from exc
+            if not membership_can_access_branch(membership, branch_id):
+                raise PermissionDenied("You do not have access to the requested branch.")
+            queryset = queryset.filter(branch_id=branch_id)
+        for name, lookup in (("date_from", "invoice_date__gte"), ("date_to", "invoice_date__lte")):
+            if params.get(name):
+                try:
+                    queryset = queryset.filter(**{lookup: date.fromisoformat(params[name])})
+                except ValueError as exc:
+                    raise ValidationError({name: "Use the format YYYY-MM-DD."}) from exc
+        if params.get("invoice_number"):
+            queryset = queryset.filter(invoice_number=params["invoice_number"].strip().upper())
+        limit = self._int_param(params, "limit", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE)
+        offset = self._int_param(params, "offset", 0, 0, None)
+        return Response([serialize_sale_summary(sale) for sale in queryset[offset:offset + limit]])
+
+    @staticmethod
+    def _int_param(params, name, default, minimum, maximum):
+        raw = params.get(name)
+        if raw in (None, ""):
+            return default
+        try:
+            value = int(raw)
+        except ValueError as exc:
+            raise ValidationError({name: "Enter a whole number."}) from exc
+        if value < minimum or (maximum is not None and value > maximum):
+            bound = f"between {minimum} and {maximum}" if maximum is not None else f"at least {minimum}"
+            raise ValidationError({name: f"Must be {bound}."})
+        return value
 
     def post(self, request):
         membership = require_membership_role(
@@ -150,30 +203,18 @@ class SaleCreateView(APIView):
 
     @staticmethod
     def _response(sale, replayed):
-        tenant_id = sale.tenant_id
-        money = str
-        return {
-            "id": str(sale.id), "invoice_number": sale.invoice_number,
-            "invoice_date": sale.invoice_date.isoformat(), "branch_id": str(sale.branch_id),
-            "customer_name": sale.customer_name, "seller_gstin": sale.seller_gstin,
-            "place_of_supply_state_code": sale.place_of_supply_state_code,
-            "taxable_total": money(sale.taxable_total), "cgst_total": money(sale.cgst_total),
-            "sgst_total": money(sale.sgst_total), "igst_total": money(sale.igst_total),
-            "total_tax": money(sale.total_tax), "round_off": money(sale.round_off),
-            "grand_total": money(sale.grand_total), "replayed": replayed,
-            "lines": [
-                {
-                    "product_id": str(line.product_id), "sku": line.sku, "name": line.name,
-                    "hsn_code": line.hsn_code, "unit": line.unit, "quantity": money(line.quantity),
-                    "unit_price": money(line.unit_price), "gst_rate": money(line.gst_rate),
-                    "taxable_value": money(line.taxable_value), "cgst_amount": money(line.cgst_amount),
-                    "sgst_amount": money(line.sgst_amount), "igst_amount": money(line.igst_amount),
-                    "line_total": money(line.line_total),
-                }
-                for line in SaleLine.objects.for_tenant(tenant_id).filter(sale=sale).order_by("id")
-            ],
-            "payments": [
-                {"method": p.method, "amount": money(p.amount), "reference": p.reference}
-                for p in SalePayment.objects.for_tenant(tenant_id).filter(sale=sale).order_by("id")
-            ],
-        }
+        return {**serialize_sale(sale), "replayed": replayed}
+
+
+class SaleDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, sale_id):
+        membership = active_tenant_membership(request)
+        sale = Sale.objects.for_tenant(membership.tenant_id).filter(
+            pk=sale_id, branch__in=authorized_branches(membership)
+        ).first()
+        # Unknown, foreign-tenant and ungranted-branch sales are indistinguishable.
+        if sale is None:
+            raise NotFound("Sale not found.")
+        return Response(serialize_sale(sale))

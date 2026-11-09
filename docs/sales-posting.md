@@ -48,7 +48,20 @@ A repeated key with the same request returns 200 with `replayed: true` and the o
 invoice, with no second deduction. The same key with a different request returns 409.
 Everything is atomic: a rejected sale consumes no invoice number and changes no stock.
 
+## Reading sales
+
+All five roles (including accountants) may read; only branches the membership is granted
+are visible.
+
+- `GET /api/v1/sales` — array of compact rows (no lines or payments), newest first.
+  Query parameters: `branch_id`, `date_from` and `date_to` (`YYYY-MM-DD`, on invoice date),
+  `invoice_number` (exact, case-insensitive), `limit` (1-200, default 50), `offset`.
+  A `branch_id` the caller cannot access returns 403.
+- `GET /api/v1/sales/{id}` — the full invoice (header, seller/supply snapshot, lines,
+  payments), the same body POST returns minus `replayed`. Unknown, foreign-store and
+  ungranted-branch sales all return 404.
+
 ## Not included yet
 
-Customer GSTIN / inter-state supply, discounts, credit or partial payments, listing and
-fetching sales, credit notes and the billing screen.
+Customer GSTIN / inter-state supply, discounts, credit or partial payments, credit notes
+and the billing screen.
