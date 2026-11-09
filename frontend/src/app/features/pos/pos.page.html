@@ -26,7 +26,10 @@
           <li>{{ payment.method }} · ₹{{ payment.amount }}@if (payment.reference) { · {{ payment.reference }} }</li>
         }
       </ul>
-      <button type="button" class="primary" (click)="newSale()">New sale</button>
+      <div class="receipt-actions">
+        <button type="button" class="primary" (click)="newSale()">New sale</button>
+        <a class="view-invoice" [routerLink]="['/gst', sale.id]">View invoice</a>
+      </div>
     </div>
   } @else {
     <div class="layout">

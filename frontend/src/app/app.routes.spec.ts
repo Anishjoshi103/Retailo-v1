@@ -18,6 +18,17 @@ describe('application routes', () => {
     expect(children.find((route) => route.path === 'reports')?.canActivate).toContain(roleBranchGuard);
   });
 
+  it('serves invoice history and detail at gst for every role, and requires a branch', () => {
+    const shell = routes.find((route) => route.path === '');
+    for (const path of ['gst', 'gst/:id']) {
+      const route = shell?.children?.find((child) => child.path === path);
+      expect(route?.canActivate, path).toContain(roleBranchGuard);
+      expect(route?.data?.['branchRequired'], path).toBe(true);
+      expect(route?.data?.['roles'], path).toEqual(['owner', 'admin', 'manager', 'cashier', 'accountant']);
+      expect(route?.loadComponent, path).toBeDefined();
+    }
+  });
+
   it('serves the billing screen at pos for selling roles only, and requires a branch', () => {
     const shell = routes.find((route) => route.path === '');
     const pos = shell?.children?.find((route) => route.path === 'pos');
