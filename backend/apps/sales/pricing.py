@@ -1,14 +1,15 @@
 """Server-side invoice pricing: line GST via apps.gst, then a rupee-rounded grand total.
 
-Prices are tax-exclusive (``Product.selling_price`` is the taxable unit price) and are
-always read from the catalogue, never accepted from the client.
+``Product.selling_price`` is the tax-inclusive (MRP-style) unit price, read from the
+catalogue and never accepted from the client. Each line's gross amount is quantity x
+price; GST is backed out of it, so a line always totals exactly its gross amount.
 """
 
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Iterable
 
-from apps.gst.tax import calculate_gst
+from apps.gst.tax import calculate_inclusive_gst
 
 PAISE = Decimal("0.01")
 RUPEE = Decimal("1")
@@ -48,15 +49,16 @@ def price_sale(
     for product, quantity in items:
         unit_price = Decimal(product.selling_price)  # type: ignore[attr-defined]
         gst_rate = Decimal(product.gst_rate)  # type: ignore[attr-defined]
-        taxable = (quantity * unit_price).quantize(PAISE, rounding=ROUND_HALF_UP)
-        gst = calculate_gst(taxable, gst_rate, seller_state_code, place_of_supply_state_code)
+        gross = (quantity * unit_price).quantize(PAISE, rounding=ROUND_HALF_UP)
+        gst = calculate_inclusive_gst(gross, gst_rate, seller_state_code, place_of_supply_state_code)
+        taxable = Decimal(gst["taxable_value"])
         cgst = Decimal(gst["cgst_amount"])
         sgst = Decimal(gst["sgst_amount"])
         igst = Decimal(gst["igst_amount"])
         lines.append(PricedLine(
             product=product, quantity=quantity, unit_price=unit_price, gst_rate=gst_rate,
             taxable_value=taxable, cgst_amount=cgst, sgst_amount=sgst, igst_amount=igst,
-            line_total=taxable + cgst + sgst + igst,
+            line_total=gross,
         ))
     taxable_total = sum((line.taxable_value for line in lines), ZERO)
     cgst_total = sum((line.cgst_amount for line in lines), ZERO)

@@ -11,7 +11,7 @@ transaction. Requires an `Idempotency-Key` header (max 128 characters).
   "customer_name": "optional",
   "allow_negative_stock": false,
   "lines": [{"product_id": "<uuid>", "quantity": "2"}],
-  "payments": [{"method": "cash", "amount": "236.00"}, {"method": "upi", "amount": "10.00", "reference": "UPI-1"}]
+  "payments": [{"method": "cash", "amount": "190.00"}, {"method": "upi", "amount": "10.00", "reference": "UPI-1"}]
 }
 ```
 
@@ -27,8 +27,15 @@ cannot sell. `allow_negative_stock` needs owner, admin or manager (cashiers get 
 
 ## Calculation
 
-- Prices are **tax-exclusive**: `taxable = quantity × selling_price` (rounded to paise),
-  GST is added per line using `apps.gst`.
+- Catalogue prices are **tax-inclusive (MRP-style)**: a line's gross amount is
+  `quantity × selling_price` (rounded to paise) and GST is backed out of it, so the
+  customer pays the MRP, not MRP plus tax. `calculate_inclusive_gst` in `apps.gst` splits
+  it into taxable value and tax. Intra-state tax is split into equal CGST and SGST halves
+  (each rounded to paise); any leftover paisa stays in the taxable value, so CGST always
+  equals SGST and `taxable + CGST + SGST (+ IGST)` equals the gross amount exactly.
+  Example: ₹200.00 at 18% → taxable 169.50, CGST 15.25, SGST 15.25.
+- `SaleLine.unit_price` is the tax-inclusive price as sold; `taxable_value` is the
+  tax-exclusive part.
 - Place of supply is the branch's state, so every sale is intra-state (CGST + SGST). The
   branch needs a `state_code` (see `branch-gst-identity.md`), otherwise the request is rejected.
 - The grand total is rounded to the nearest rupee; `round_off` records the difference.

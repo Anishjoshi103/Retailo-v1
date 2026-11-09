@@ -44,3 +44,9 @@ Format `INV-<BRANCHCODE>-<6 digit serial>`, for example `INV-MAIN-000001`.
 ## Posting
 
 See `sales-posting.md` for `POST /api/v1/sales`.
+
+## Note on stored money checks
+
+The sum check constraints compare against `ROUND(sum, 2)`. SQLite stores decimals as
+floats, so an exact sum such as 84.74 + 7.63 + 7.63 can differ in the last bit; rounding to
+paise makes the checks behave identically on SQLite and SQL Server.

@@ -129,3 +129,25 @@ class SalesModelTests(TestCase):
         self.make_sale()
         with self.assertRaises(RuntimeError):
             Sale.objects.count()
+
+    def test_sum_checks_accept_float_prone_amounts_but_reject_a_paisa_mismatch(self):
+        # 84.74 + 7.63 + 7.63 is 99.99999999999999 as a float; the check must still accept it.
+        sale = self.make_sale(
+            taxable_total=Decimal("84.74"), cgst_total=Decimal("7.63"), sgst_total=Decimal("7.63"),
+            total_tax=Decimal("15.26"), grand_total=Decimal("100.00"),
+        )
+        self.make_line(
+            sale, unit_price=Decimal("100.00"), taxable_value=Decimal("84.74"),
+            cgst_amount=Decimal("7.63"), sgst_amount=Decimal("7.63"), line_total=Decimal("100.00"),
+        )
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            self.make_line(
+                sale, taxable_value=Decimal("84.74"), cgst_amount=Decimal("7.63"),
+                sgst_amount=Decimal("7.63"), line_total=Decimal("100.01"),
+            )
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            self.make_sale(
+                invoice_number="INV-MAIN-000002", idempotency_key="key-2",
+                taxable_total=Decimal("84.74"), cgst_total=Decimal("7.63"), sgst_total=Decimal("7.63"),
+                total_tax=Decimal("15.26"), grand_total=Decimal("100.01"),
+            )
