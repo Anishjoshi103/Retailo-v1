@@ -27,6 +27,10 @@ make the manager/checker behavior match before merging.
 | `inventory.PurchaseInvoice` | `for_tenant(tenant_id)`; posted records are immutable. |
 | `inventory.PurchaseInvoiceLine` | `for_tenant(tenant_id)`; parent invoice status must be checked for every write path. |
 | `inventory.PurchaseInvoiceAllocation` | `for_tenant(tenant_id)`; parent invoice status must be checked for every write path. |
+| `sales.Sale` | `for_tenant(tenant_id)`; validate branch access; posted sales are immutable. |
+| `sales.SaleLine` | `for_tenant(tenant_id)`; preserve parent sale tenant consistency; immutable. |
+| `sales.SalePayment` | `for_tenant(tenant_id)`; preserve parent sale tenant consistency; immutable. |
+| `sales.InvoiceSequence` | `for_tenant(tenant_id)`; advanced only by `allocate_invoice_number()` under a row lock. |
 | `tenancy.Membership` | Tenant-owned relationship/security data. Scope by `tenant_id` and additionally by user identity when resolving a member. Never treat it as a global identity table. |
 | `tenancy.BranchAccess` | Tenant-owned access grant through membership and branch. Resolve using the validated tenant, membership/user, and branch. |
 
