@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { ApiClient } from '../../core/api/api-client.service';
 import { ApiError } from '../../core/api/api-error.model';
@@ -42,6 +43,7 @@ describe('PosPage', () => {
     TestBed.configureTestingModule({
       imports: [PosPage],
       providers: [
+        provideRouter([]),
         { provide: ApiClient, useValue: api },
         { provide: SalesApi, useValue: salesApi },
         { provide: SessionContextService, useValue: { roles, selectedBranchId: signal('b-1') } },
@@ -135,6 +137,8 @@ describe('PosPage', () => {
     expect(typeof key).toBe('string');
     expect(text()).toContain('Sale complete');
     expect(text()).toContain('INV-MAIN-000001');
+    const link = (fixture.nativeElement as HTMLElement).querySelector('a.view-invoice');
+    expect(link?.getAttribute('href')).toBe('/gst/s-1');
   });
 
   it('retries a failed sale with the same idempotency key, and a changed sale with a new one', () => {

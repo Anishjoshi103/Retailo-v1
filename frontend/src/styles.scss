@@ -17,3 +17,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   outline: var(--space-1) solid var(--color-focus);
   outline-offset: var(--space-1);
 }
+
+/* Printing an invoice: show only the document, not the app chrome. */
+@media print {
+  retailo-topbar, retailo-sidenav, .shell__scrim, .no-print { display: none !important; }
+}

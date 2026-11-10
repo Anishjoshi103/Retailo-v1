@@ -1,0 +1,76 @@
+<section class="invoices" aria-labelledby="invoices-title">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">GST &amp; INVOICES</p>
+      <h1 id="invoices-title">Invoices</h1>
+      <p class="intro">Tax invoices issued from this branch, newest first.</p>
+    </div>
+    <span class="count" aria-live="polite">{{ sales().length }} shown</span>
+  </header>
+
+  <form class="filters" (ngSubmit)="reload()">
+    <label class="grow">
+      <span>Invoice number</span>
+      <input name="invoice" type="search" autocomplete="off" placeholder="INV-MAIN-000001"
+        [ngModel]="invoiceNumber()" (ngModelChange)="invoiceNumber.set($event)" />
+    </label>
+    <label>
+      <span>From</span>
+      <input name="from" type="date" [ngModel]="dateFrom()" (ngModelChange)="dateFrom.set($event)" />
+    </label>
+    <label>
+      <span>To</span>
+      <input name="to" type="date" [ngModel]="dateTo()" (ngModelChange)="dateTo.set($event)" />
+    </label>
+    <button type="submit" class="primary" [disabled]="dateRangeInvalid">Search</button>
+    <button type="button" class="text-button" (click)="clearFilters()">Clear</button>
+  </form>
+  @if (dateRangeInvalid) {
+    <p class="notice notice-error" role="alert">The From date is after the To date.</p>
+  }
+
+  @if (errorMessage()) {
+    <div class="notice notice-error" role="alert">
+      <span>{{ errorMessage() }}</span>
+      <button type="button" class="text-button" (click)="reload()">Try again</button>
+    </div>
+  }
+
+  <div class="table-wrap" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <div class="notice" role="status">Loading invoices…</div>
+    } @else if (!errorMessage() && sales().length === 0) {
+      <div class="empty-state">
+        <h2>No invoices found</h2>
+        <p>Completed sales appear here. Try another invoice number or date range.</p>
+      </div>
+    } @else if (sales().length > 0) {
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Invoice</th>
+            <th scope="col">Date</th>
+            <th scope="col">Customer</th>
+            <th scope="col" class="numeric">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (sale of sales(); track sale.id) {
+            <tr>
+              <td><a class="invoice-link" [routerLink]="['/gst', sale.id]">{{ sale.invoice_number }}</a></td>
+              <td>{{ sale.invoice_date }}</td>
+              <td>{{ sale.customer_name || 'Walk-in' }}</td>
+              <td class="numeric price">₹{{ sale.grand_total }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  @if (hasMore()) {
+    <button type="button" class="secondary load-more" [disabled]="loadingMore()" (click)="loadMore()">
+      {{ loadingMore() ? 'Loading…' : 'Load more' }}
+    </button>
+  }
+</section>

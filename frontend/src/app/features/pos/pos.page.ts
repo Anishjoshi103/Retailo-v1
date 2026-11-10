@@ -1,6 +1,7 @@
 import { HttpParams } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ApiClient } from '../../core/api/api-client.service';
 import { ApiError } from '../../core/api/api-error.model';
@@ -45,7 +46,7 @@ function newIdempotencyKey(): string {
 @Component({
   selector: 'app-pos-page',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: './pos.page.html',
   styleUrl: './pos.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
