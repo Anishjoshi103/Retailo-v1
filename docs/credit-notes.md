@@ -35,10 +35,37 @@ as invoice numbers: gapless, inside the document's own transaction, under a row 
 resetting each year, and validated against GST's 16-character limit. Invoice and credit
 note counters are separate.
 
+## Posting a return — `POST /api/v1/sales/{id}/returns`
+
+Requires an `Idempotency-Key` header. Owner, admin, manager and cashier may call it for a sale
+in a branch they hold a grant on; accountants cannot. Unknown, foreign-store and ungranted-branch
+sales return 404.
+
+```json
+{"reason": "Damaged", "lines": [{"sale_line_id": "<uuid>", "quantity": "1"}]}
+```
+
+- `sale_line_id` is the line's `id` from `GET /api/v1/sales/{id}`; each line may appear once.
+- Amounts are never client-supplied; they are reversed from the sale.
+- **Cap:** the quantity returned across all credit notes for a line can never exceed the
+  quantity sold. The sale row is locked while this is checked, and the branch's credit note
+  counter serialises concurrent returns.
+- **Tax reversal:** for each of taxable value, CGST, SGST and IGST, the amount returned so far
+  is the original amount x (cumulative quantity returned / quantity sold), rounded half-up to
+  paise; a return takes the difference between the running totals after and before it. Repeated
+  partial returns therefore add up to the original line exactly, never go negative, and keep
+  CGST equal to SGST. An individual partial return can differ from the MRP by a paisa; the
+  refund is rounded to the rupee like the invoice.
+- **Refund:** the credit note's `grand_total` (`refund_amount`), always cash. Returning every
+  line of a sale refunds exactly the invoice's grand total.
+- **Stock:** each returned line is added back to the branch's inventory and recorded as a
+  `return` stock movement referencing the credit note number.
+- **Idempotency:** the same key and request replays the original credit note (200,
+  `replayed: true`) with no second restock; the same key with a different request is 409.
+  Everything is atomic, so a rejected return consumes no number and changes no stock.
+
+`GET /api/v1/sales/{id}` lines now include their `id` for this purpose.
+
 ## Planned next
 
-- `POST /api/v1/sales/{id}/returns`: partial or full returns capped at the quantity sold
-  across all earlier credit notes; tax reversed from the original line (the final return of
-  a line takes the exact remainder, so repeated partial returns reconcile with the invoice);
-  stock restored; cash refund equal to the credit note total.
-- Credit note list/detail reads, then the "Return items" screen and printable credit note.
+- Credit note list/detail reads, then the "Return items" screen and a printable credit note.

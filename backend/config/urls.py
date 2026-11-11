@@ -2,6 +2,7 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from apps.accounts.views import BranchesView
+from apps.sales.return_views import SaleReturnView
 from apps.sales.views import SaleDetailView, SaleListCreateView
 from apps.tenancy.branch_views import BranchDetailView
 
@@ -13,6 +14,7 @@ urlpatterns = [
     path("api/v1/branches/<uuid:branch_id>", BranchDetailView.as_view(), name="branch-detail"),
     path("api/v1/sales", SaleListCreateView.as_view(), name="sale-list-create"),
     path("api/v1/sales/<uuid:sale_id>", SaleDetailView.as_view(), name="sale-detail"),
+    path("api/v1/sales/<uuid:sale_id>/returns", SaleReturnView.as_view(), name="sale-return"),
     path("api/v1/", include("apps.catalog.urls")),
     path("api/v1/inventory/", include("apps.inventory.urls")),
     path("api/v1/inventory/", include("apps.inventory.purchase_urls")),

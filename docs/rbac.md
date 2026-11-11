@@ -25,6 +25,7 @@ This matrix describes the API routes currently registered in `config/urls.py` an
 | `POST /api/v1/sales` | Allow | Allow | Allow | Allow | Deny | Active tenant and active branch grant. `allow_negative_stock` (sell below on-hand stock) additionally requires owner, admin or manager; cashiers receive 403 |
 | `GET /api/v1/sales` | Read | Read | Read | Read | Read | Only sales of branches granted to the membership; `branch_id` outside the grants returns 403 |
 | `GET /api/v1/sales/{id}` | Read | Read | Read | Read | Read | Active tenant and active branch grant; others receive 404 |
+| `POST /api/v1/sales/{id}/returns` | Allow | Allow | Allow | Allow | Deny | Active tenant and active branch grant on the sale; others receive 404. Refunds are cash only |
 | `GET /api/v1/branches` | Read | Read | Read | Read | Read | Only active branches granted to the membership |
 | `PATCH /api/v1/branches/{id}` | Allow | Allow | Deny | Deny | Deny | Active tenant and active branch grant; others receive 404 |
 | `GET /api/v1/auth/me` | Read | Read | Read | Read | Read | Authenticated active membership |

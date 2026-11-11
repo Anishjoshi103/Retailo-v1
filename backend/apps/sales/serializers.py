@@ -58,3 +58,21 @@ class SaleInputSerializer(serializers.Serializer):
             line["product"] = products[line["product_id"]]
         attrs["customer_name"] = attrs["customer_name"].strip()
         return attrs
+
+
+class ReturnLineInputSerializer(serializers.Serializer):
+    sale_line_id = serializers.UUIDField()
+    quantity = serializers.DecimalField(max_digits=14, decimal_places=3, min_value=Decimal("0.001"))
+
+
+class ReturnInputSerializer(serializers.Serializer):
+    """Return items from one sale. Amounts are never client-supplied; they are reversed from the sale."""
+
+    reason = serializers.CharField(max_length=200, trim_whitespace=True)
+    lines = ReturnLineInputSerializer(many=True, min_length=1, max_length=MAX_LINES)
+
+    def validate_lines(self, lines):
+        ids = [line["sale_line_id"] for line in lines]
+        if len(set(ids)) != len(ids):
+            raise serializers.ValidationError("Each item may appear only once; combine quantities.")
+        return lines
