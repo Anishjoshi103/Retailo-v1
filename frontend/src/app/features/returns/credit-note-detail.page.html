@@ -1,0 +1,78 @@
+<section class="invoice" aria-labelledby="note-title">
+  <nav class="actions no-print">
+    <a class="back" routerLink="/gst/credit-notes">← All credit notes</a>
+    @if (note()) {
+      <button type="button" class="primary" (click)="print()">Print</button>
+    }
+  </nav>
+
+  @if (loading()) {
+    <p class="notice no-print" role="status">Loading credit note…</p>
+  } @else if (notFound()) {
+    <div class="notice notice-error" role="alert">Credit note not found. It may belong to another branch or store.</div>
+  } @else if (errorMessage()) {
+    <div class="notice notice-error" role="alert">{{ errorMessage() }}</div>
+  } @else if (note(); as note) {
+    <article class="sheet">
+      <header class="sheet-head">
+        <div>
+          <p class="eyebrow">CREDIT NOTE</p>
+          <h1 id="note-title">{{ note.credit_note_number }}</h1>
+          <p class="reason-line">Reason: {{ note.reason }}</p>
+        </div>
+        <dl class="meta">
+          <div><dt>Date</dt><dd>{{ note.credit_note_date }}</dd></div>
+          <div><dt>Against invoice</dt><dd><a class="back" [routerLink]="['/gst', note.sale_id]">{{ note.invoice_number }}</a></dd></div>
+          <div><dt>Seller GSTIN</dt><dd>{{ note.seller_gstin || '—' }}</dd></div>
+          <div><dt>Place of supply</dt><dd>State {{ note.place_of_supply_state_code }}</dd></div>
+          <div><dt>Customer</dt><dd>{{ note.customer_name || 'Walk-in' }}</dd></div>
+        </dl>
+      </header>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Item</th>
+              <th scope="col">HSN</th>
+              <th scope="col" class="numeric">Qty returned</th>
+              <th scope="col" class="numeric">MRP</th>
+              <th scope="col" class="numeric">Taxable</th>
+              <th scope="col" class="numeric">GST %</th>
+              <th scope="col" class="numeric">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of note.lines; track line.sale_line_id) {
+              <tr>
+                <td><span class="name">{{ line.name }}</span><span class="sub">{{ line.sku }}</span></td>
+                <td>{{ line.hsn_code || '—' }}</td>
+                <td class="numeric">{{ line.quantity }} {{ line.unit }}</td>
+                <td class="numeric">₹{{ line.unit_price }}</td>
+                <td class="numeric">₹{{ line.taxable_value }}</td>
+                <td class="numeric">{{ line.gst_rate }}%</td>
+                <td class="numeric strong">₹{{ line.line_total }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="foot">
+        <dl class="totals">
+          <div><dt>Taxable value</dt><dd>₹{{ note.taxable_total }}</dd></div>
+          <div><dt>CGST</dt><dd>₹{{ note.cgst_total }}</dd></div>
+          <div><dt>SGST</dt><dd>₹{{ note.sgst_total }}</dd></div>
+          @if (hasIgst(note)) {
+            <div><dt>IGST</dt><dd>₹{{ note.igst_total }}</dd></div>
+          }
+          <div><dt>Round off</dt><dd>₹{{ note.round_off }}</dd></div>
+        </dl>
+        <div>
+          <div class="refund"><span>Cash refund</span><span>₹{{ note.refund_amount }}</span></div>
+          <p class="inclusive-note">Refunded in cash. Tax shown is the portion contained in the refunded price.</p>
+        </div>
+      </div>
+    </article>
+  }
+</section>

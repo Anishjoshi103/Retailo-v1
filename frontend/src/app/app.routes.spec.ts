@@ -29,6 +29,21 @@ describe('application routes', () => {
     }
   });
 
+  it('serves credit notes under gst, with the static routes ahead of the invoice id route', () => {
+    const shell = routes.find((route) => route.path === '');
+    const paths = (shell?.children ?? []).map((route) => route.path);
+    expect(paths.indexOf('gst/credit-notes')).toBeGreaterThan(-1);
+    expect(paths.indexOf('gst/credit-notes')).toBeLessThan(paths.indexOf('gst/:id'));
+    expect(paths.indexOf('gst/credit-notes/:id')).toBeLessThan(paths.indexOf('gst/:id'));
+    for (const path of ['gst/credit-notes', 'gst/credit-notes/:id']) {
+      const route = shell?.children?.find((child) => child.path === path);
+      expect(route?.canActivate, path).toContain(roleBranchGuard);
+      expect(route?.data?.['branchRequired'], path).toBe(true);
+      expect(route?.data?.['roles'], path).toEqual(['owner', 'admin', 'manager', 'cashier', 'accountant']);
+      expect(route?.loadComponent, path).toBeDefined();
+    }
+  });
+
   it('serves the billing screen at pos for selling roles only, and requires a branch', () => {
     const shell = routes.find((route) => route.path === '');
     const pos = shell?.children?.find((route) => route.path === 'pos');

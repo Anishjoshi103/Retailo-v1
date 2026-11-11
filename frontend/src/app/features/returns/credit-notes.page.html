@@ -1,0 +1,79 @@
+<section class="invoices" aria-labelledby="notes-title">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">GST &amp; INVOICES</p>
+      <h1 id="notes-title">Credit notes</h1>
+      <p class="intro">Sales returns issued from this branch, newest first.</p>
+    </div>
+    <span class="count" aria-live="polite">{{ notes().length }} shown</span>
+  </header>
+  <p><a class="back-link" routerLink="/gst">← Invoices</a></p>
+
+  <form class="filters" (ngSubmit)="reload()">
+    <label class="grow">
+      <span>Credit note number</span>
+      <input name="number" type="search" autocomplete="off" placeholder="CN-MAIN-000001"
+        [ngModel]="creditNoteNumber()" (ngModelChange)="creditNoteNumber.set($event)" />
+    </label>
+    <label>
+      <span>From</span>
+      <input name="from" type="date" [ngModel]="dateFrom()" (ngModelChange)="dateFrom.set($event)" />
+    </label>
+    <label>
+      <span>To</span>
+      <input name="to" type="date" [ngModel]="dateTo()" (ngModelChange)="dateTo.set($event)" />
+    </label>
+    <button type="submit" class="primary" [disabled]="dateRangeInvalid">Search</button>
+    <button type="button" class="text-button" (click)="clearFilters()">Clear</button>
+  </form>
+  @if (dateRangeInvalid) {
+    <p class="notice notice-error" role="alert">The From date is after the To date.</p>
+  }
+
+  @if (errorMessage()) {
+    <div class="notice notice-error" role="alert">
+      <span>{{ errorMessage() }}</span>
+      <button type="button" class="text-button" (click)="reload()">Try again</button>
+    </div>
+  }
+
+  <div class="table-wrap" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <div class="notice" role="status">Loading credit notes…</div>
+    } @else if (!errorMessage() && notes().length === 0) {
+      <div class="empty-state">
+        <h2>No credit notes found</h2>
+        <p>Returns taken against invoices appear here. Try another number or date range.</p>
+      </div>
+    } @else if (notes().length > 0) {
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Credit note</th>
+            <th scope="col">Date</th>
+            <th scope="col">Against invoice</th>
+            <th scope="col">Reason</th>
+            <th scope="col" class="numeric">Cash refund</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (note of notes(); track note.id) {
+            <tr>
+              <td><a class="note-link" [routerLink]="['/gst/credit-notes', note.id]">{{ note.credit_note_number }}</a></td>
+              <td>{{ note.credit_note_date }}</td>
+              <td><a class="note-link" [routerLink]="['/gst', note.sale_id]">{{ note.invoice_number }}</a></td>
+              <td class="reason" [attr.title]="note.reason">{{ note.reason }}</td>
+              <td class="numeric price">₹{{ note.grand_total }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  @if (hasMore()) {
+    <button type="button" class="secondary load-more" [disabled]="loadingMore()" (click)="loadMore()">
+      {{ loadingMore() ? 'Loading…' : 'Load more' }}
+    </button>
+  }
+</section>
