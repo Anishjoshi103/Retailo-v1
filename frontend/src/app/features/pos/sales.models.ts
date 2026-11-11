@@ -35,12 +35,16 @@ export interface SaleSummary {
 }
 
 export interface SaleLineView {
+  /** The sale line's own id; a return names lines by this. */
+  readonly id: string;
   readonly product_id: string;
   readonly sku: string;
   readonly name: string;
   readonly hsn_code: string;
   readonly unit: string;
   readonly quantity: string;
+  /** Quantity already returned through credit notes; the rest can still be returned. */
+  readonly returned_quantity: string;
   /** Tax-inclusive (MRP-style) unit price as sold. */
   readonly unit_price: string;
   readonly gst_rate: string;
