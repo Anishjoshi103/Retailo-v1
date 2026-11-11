@@ -38,6 +38,23 @@ class InvoiceSequence(TenantOwnedModel):
         ]
 
 
+class CreditNoteSequence(TenantOwnedModel):
+    """Gapless credit note counter for one branch; advanced only by allocate_credit_note_number()."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    branch = models.ForeignKey(
+        "tenancy.Branch", on_delete=models.PROTECT, related_name="credit_note_sequences"
+    )
+    last_number = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "branch"], name="uq_credit_note_sequence_tenant_branch"
+            ),
+        ]
+
+
 class Sale(TenantOwnedModel):
     """A posted retail tax invoice. Every row is final; there is no draft state."""
 
@@ -120,15 +137,16 @@ class _SaleChildGuard:
     directly, which is how scripts/check_tenant_scope.py recognises tenant-owned models.
     """
 
-    sale: "Sale"
     tenant_id: uuid.UUID
     _state: models.base.ModelState
+    # Name of the FK to the parent document whose tenant this record must share.
+    parent_attr = "sale"
 
     def save(self, *args, **kwargs):
         if not self._state.adding:
             raise TypeError("Posted sales records are immutable.")
-        if self.sale.tenant_id != self.tenant_id:
-            raise ValueError("A sale record must belong to the same tenant as its sale.")
+        if getattr(self, self.parent_attr).tenant_id != self.tenant_id:
+            raise ValueError("A sales record must belong to the same tenant as its parent document.")
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
@@ -202,3 +220,136 @@ class SalePayment(_SaleChildGuard, TenantOwnedModel):
         constraints = [
             models.CheckConstraint(condition=models.Q(amount__gt=0), name="ck_sale_payment_positive"),
         ]
+
+
+class CreditNote(_SaleChildGuard, TenantOwnedModel):
+    """A posted GST credit note reversing part or all of one sale. Refunded in cash."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    branch = models.ForeignKey("tenancy.Branch", on_delete=models.PROTECT, related_name="credit_notes")
+    sale = models.ForeignKey(Sale, on_delete=models.PROTECT, related_name="credit_notes")
+    credit_note_number = models.CharField(max_length=16)
+    credit_note_date = models.DateField()
+    # Seller and supply snapshots copied from the original sale.
+    seller_gstin = models.CharField(max_length=15, blank=True)
+    seller_state_code = models.CharField(max_length=2)
+    place_of_supply_state_code = models.CharField(max_length=2)
+    customer_name = models.CharField(max_length=180, blank=True)
+    customer_gstin = models.CharField(max_length=15, blank=True)
+    taxable_total = models.DecimalField(max_digits=14, decimal_places=2)
+    cgst_total = models.DecimalField(max_digits=14, decimal_places=2)
+    sgst_total = models.DecimalField(max_digits=14, decimal_places=2)
+    igst_total = models.DecimalField(max_digits=14, decimal_places=2)
+    total_tax = models.DecimalField(max_digits=14, decimal_places=2)
+    round_off = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    # Amount handed back to the customer in cash.
+    grand_total = models.DecimalField(max_digits=14, decimal_places=2)
+    reason = models.CharField(max_length=200)
+    idempotency_key = models.CharField(max_length=128)
+    request_hash = models.CharField(max_length=64)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    objects: ClassVar[models.Manager["CreditNote"]] = AppendOnlyQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "branch", "credit_note_number"], name="uq_credit_note_tenant_branch_number"
+            ),
+            models.UniqueConstraint(
+                fields=["tenant", "idempotency_key"], name="uq_credit_note_tenant_idempotency_key"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    taxable_total__gte=0, cgst_total__gte=0, sgst_total__gte=0,
+                    igst_total__gte=0, total_tax__gte=0, grand_total__gte=0,
+                ),
+                name="ck_credit_note_amounts_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    total_tax=Round(models.F("cgst_total") + models.F("sgst_total") + models.F("igst_total"), 2)
+                ),
+                name="ck_credit_note_tax_components_sum",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    grand_total=Round(
+                        models.F("taxable_total") + models.F("total_tax") + models.F("round_off"), 2
+                    )
+                ),
+                name="ck_credit_note_grand_total_sum",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["tenant", "branch", "created_at"], name="ix_cnote_tenant_branch_created"),
+            models.Index(fields=["tenant", "sale"], name="ix_cnote_tenant_sale"),
+        ]
+
+    def __str__(self):
+        return self.credit_note_number
+
+    def save(self, *args, **kwargs):
+        if self._state.adding and self.sale.branch_id != self.branch_id:
+            raise ValueError("A credit note must be issued at the branch of its sale.")
+        super().save(*args, **kwargs)
+
+
+class CreditNoteLine(_SaleChildGuard, TenantOwnedModel):
+    """One returned line, tied to the original sale line so returns can never exceed what was sold."""
+
+    parent_attr = "credit_note"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    credit_note = models.ForeignKey(CreditNote, on_delete=models.PROTECT, related_name="lines")
+    sale_line = models.ForeignKey(SaleLine, on_delete=models.PROTECT, related_name="credit_lines")
+    product = models.ForeignKey(
+        "catalog.Product", on_delete=models.PROTECT, related_name="credit_note_lines"
+    )
+    sku = models.CharField(max_length=64)
+    name = models.CharField(max_length=180)
+    hsn_code = models.CharField(max_length=8, blank=True)
+    unit = models.CharField(max_length=8)
+    quantity = models.DecimalField(max_digits=14, decimal_places=3)
+    # Tax-inclusive (MRP-style) unit price, copied from the sale line.
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    gst_rate = models.DecimalField(max_digits=5, decimal_places=2)
+    taxable_value = models.DecimalField(max_digits=14, decimal_places=2)
+    cgst_amount = models.DecimalField(max_digits=14, decimal_places=2)
+    sgst_amount = models.DecimalField(max_digits=14, decimal_places=2)
+    igst_amount = models.DecimalField(max_digits=14, decimal_places=2)
+    line_total = models.DecimalField(max_digits=14, decimal_places=2)
+    objects: ClassVar[models.Manager["CreditNoteLine"]] = AppendOnlyQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["id"]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(quantity__gt=0), name="ck_cnote_line_qty_positive"),
+            models.CheckConstraint(
+                condition=models.Q(unit_price__gte=0), name="ck_cnote_line_price_nonnegative"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    taxable_value__gte=0, cgst_amount__gte=0, sgst_amount__gte=0,
+                    igst_amount__gte=0, gst_rate__gte=0, gst_rate__lte=100,
+                ),
+                name="ck_cnote_line_amounts_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    line_total=Round(
+                        models.F("taxable_value") + models.F("cgst_amount")
+                        + models.F("sgst_amount") + models.F("igst_amount"), 2
+                    )
+                ),
+                name="ck_cnote_line_total_sum",
+            ),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self._state.adding and (
+            self.sale_line.sale_id != self.credit_note.sale_id or self.sale_line.product_id != self.product_id
+        ):
+            raise ValueError("A credit note line must return a line of the credit note's own sale.")
+        super().save(*args, **kwargs)

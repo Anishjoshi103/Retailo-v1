@@ -31,6 +31,9 @@ make the manager/checker behavior match before merging.
 | `sales.SaleLine` | `for_tenant(tenant_id)`; preserve parent sale tenant consistency; immutable. |
 | `sales.SalePayment` | `for_tenant(tenant_id)`; preserve parent sale tenant consistency; immutable. |
 | `sales.InvoiceSequence` | `for_tenant(tenant_id)`; advanced only by `allocate_invoice_number()` under a row lock. |
+| `sales.CreditNote` | `for_tenant(tenant_id)`; validate branch access; same tenant and branch as its sale; immutable. |
+| `sales.CreditNoteLine` | `for_tenant(tenant_id)`; must return a line of its own credit note's sale; immutable. |
+| `sales.CreditNoteSequence` | `for_tenant(tenant_id)`; advanced only by `allocate_credit_note_number()` under a row lock. |
 | `tenancy.Membership` | Tenant-owned relationship/security data. Scope by `tenant_id` and additionally by user identity when resolving a member. Never treat it as a global identity table. |
 | `tenancy.BranchAccess` | Tenant-owned access grant through membership and branch. Resolve using the validated tenant, membership/user, and branch. |
 
