@@ -54,6 +54,11 @@ describe('InvoicesPage', () => {
     expect(links).toEqual(['/gst/s-2', '/gst/s-1']);
   });
 
+  it('links to the credit notes list', () => {
+    create();
+    expect(element().querySelector('a.credit-notes-link')?.getAttribute('href')).toBe('/gst/credit-notes');
+  });
+
   it('shows an empty state when there are no invoices', () => {
     salesApi.list.mockReturnValue(of([]));
     create();
