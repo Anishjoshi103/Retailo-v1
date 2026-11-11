@@ -64,8 +64,20 @@ sales return 404.
   `replayed: true`) with no second restock; the same key with a different request is 409.
   Everything is atomic, so a rejected return consumes no number and changes no stock.
 
-`GET /api/v1/sales/{id}` lines now include their `id` for this purpose.
+`GET /api/v1/sales/{id}` lines include their `id` (for this request) and `returned_quantity`
+(already returned through credit notes; `quantity - returned_quantity` can still be returned).
+
+## Reading credit notes
+
+All five roles (including accountants) may read; only branches the membership is granted
+are visible.
+
+- `GET /api/v1/credit-notes`: compact rows (no lines) newest first. Filters: `branch_id`
+  (an inaccessible branch returns 403), `sale_id`, `credit_note_number` (exact,
+  case-insensitive), `date_from` / `date_to` (`YYYY-MM-DD`), `limit` (1-200, default 50), `offset`.
+- `GET /api/v1/credit-notes/{id}`: the full credit note, the same body POST returns minus
+  `replayed`. Unknown, foreign-store and ungranted-branch credit notes return 404.
 
 ## Planned next
 
-- Credit note list/detail reads, then the "Return items" screen and a printable credit note.
+- The "Return items" screen and a printable credit note.
