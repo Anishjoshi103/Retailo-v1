@@ -14,6 +14,7 @@ export const routes: Routes = [
     { path: 'gst/credit-notes', canActivate: [roleBranchGuard], data: { title: 'Credit notes', branchRequired: true, roles: allRoles }, loadComponent: () => import('./features/returns/credit-notes.page').then((m) => m.CreditNotesPage) },
     { path: 'gst/credit-notes/:id', canActivate: [roleBranchGuard], data: { title: 'Credit note', branchRequired: true, roles: allRoles }, loadComponent: () => import('./features/returns/credit-note-detail.page').then((m) => m.CreditNoteDetailPage) },
     { path: 'gst/:id', canActivate: [roleBranchGuard], data: { title: 'Invoice', branchRequired: true, roles: allRoles }, loadComponent: () => import('./features/invoices/invoice-detail.page').then((m) => m.InvoiceDetailPage) },
+    { path: 'gst/:id/return', canActivate: [roleBranchGuard], data: { title: 'Return items', branchRequired: true, roles: ['owner', 'admin', 'manager', 'cashier'] }, loadComponent: () => import('./features/returns/return.page').then((m) => m.ReturnPage) },
     ...featurePaths.map((path) => ({ path, canActivate: [roleBranchGuard], data: { title: featureTitle(path), ...(path === 'reports' ? { roles: ['owner', 'admin', 'manager'] } : {}), ...(path === 'settings' ? { roles: ['owner', 'admin'] } : {}) }, loadComponent: () => import('./features/placeholder/feature-placeholder.page').then((m) => m.FeaturePlaceholderPage) }))
   ] },
   { path: '**', redirectTo: '' }

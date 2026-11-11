@@ -1,0 +1,90 @@
+<section class="return" aria-labelledby="return-title">
+  <nav class="actions">
+    @if (sale(); as sale) {
+      <a class="back" [routerLink]="['/gst', sale.id]">← Back to invoice</a>
+    } @else {
+      <a class="back" routerLink="/gst">← Invoices</a>
+    }
+  </nav>
+
+  @if (loading()) {
+    <p class="notice" role="status">Loading invoice…</p>
+  } @else if (notFound()) {
+    <div class="notice notice-error" role="alert">Invoice not found. It may belong to another branch or store.</div>
+  } @else if (loadError()) {
+    <div class="notice notice-error" role="alert">{{ loadError() }}</div>
+  } @else if (sale(); as sale) {
+    <header class="page-header">
+      <p class="eyebrow">SALES RETURN</p>
+      <h1 id="return-title">Return items from {{ sale.invoice_number }}</h1>
+      <p class="intro">Choose what is coming back. Returned items go back into stock and the customer is refunded in cash.</p>
+    </header>
+
+    @if (!anythingReturnable()) {
+      <div class="notice" role="status">Everything on this invoice has already been returned.</div>
+    } @else {
+      <div class="card">
+        <div class="card-head">
+          <h2>Items</h2>
+          <span>
+            <button type="button" class="text-button" (click)="returnEverything()">Return everything</button>
+            <button type="button" class="text-button" (click)="clearQuantities()">Clear</button>
+          </span>
+        </div>
+        <ul class="lines">
+          @for (state of lines(); track state.line.id) {
+            <li>
+              <div class="item">
+                <span class="name">{{ state.line.name }}</span>
+                <span class="sub">{{ state.line.sku }} · ₹{{ state.line.unit_price }} each · sold {{ state.line.quantity }} {{ state.line.unit }}@if (state.returnedMilli > 0) { · already returned {{ state.line.returned_quantity }} }</span>
+              </div>
+              @if (state.returnableMilli > 0) {
+                <label class="qty">
+                  <span class="sr-only">Quantity of {{ state.line.name }} to return</span>
+                  <input type="text" inputmode="decimal" placeholder="0" [class.invalid]="state.error !== ''"
+                    [attr.aria-invalid]="state.error !== ''" [value]="state.text"
+                    (input)="setQuantity(state.line.id, inputValue($event))" />
+                </label>
+                <button type="button" class="secondary" (click)="returnAll(state)">All</button>
+              } @else {
+                <span class="muted">Fully returned</span>
+              }
+              @if (state.error) {
+                <p class="field-error" role="alert">{{ state.error }}</p>
+              }
+            </li>
+          }
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Reason</h2>
+        <div class="chips">
+          @for (quick of quickReasons; track quick) {
+            <button type="button" class="chip" [class.active]="reason() === quick" (click)="setReason(quick)">{{ quick }}</button>
+          }
+        </div>
+        <label class="reason">
+          <span>Reason for the return</span>
+          <input type="text" [attr.maxlength]="maxReasonLength" [value]="reason()" (input)="setReason(inputValue($event))" />
+        </label>
+      </div>
+
+      <div class="card summary">
+        <dl>
+          <div><dt>Taxable value</dt><dd>₹{{ money(preview().taxablePaise) }}</dd></div>
+          <div><dt>GST</dt><dd>₹{{ money(preview().taxPaise) }}</dd></div>
+          <div><dt>Round off</dt><dd>{{ rupees(preview().roundOffPaise) }}</dd></div>
+          <div class="grand"><dt>Cash refund</dt><dd>₹{{ money(preview().refundPaise) }}</dd></div>
+        </dl>
+        @if (submitError()) {
+          <div class="notice notice-error" role="alert">{{ submitError() }}</div>
+        }
+        <button type="button" class="primary complete" [disabled]="!canSubmit()" (click)="submit()">
+          {{ submitting() ? 'Issuing…' : 'Issue credit note' }}
+        </button>
+        <p class="note">The refund is worked out from the original invoice, so the tax matches what was charged.</p>
+      </div>
+    }
+  }
+</section>

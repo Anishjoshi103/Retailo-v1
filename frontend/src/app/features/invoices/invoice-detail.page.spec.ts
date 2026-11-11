@@ -1,7 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { ApiError } from '../../core/api/api-error.model';
+import { SessionContextService } from '../../core/auth/session-context.service';
+import { ReturnsApi } from '../returns/returns.api';
 import { SalesApi } from '../pos/sales.api';
 import { Sale } from '../pos/sales.models';
 import { InvoiceDetailPage } from './invoice-detail.page';
@@ -21,6 +24,8 @@ function sale(overrides: Partial<Sale> = {}): Sale {
 describe('InvoiceDetailPage', () => {
   let fixture: ComponentFixture<InvoiceDetailPage>;
   let salesApi: { get: ReturnType<typeof vi.fn> };
+  let returnsApi: { list: ReturnType<typeof vi.fn> };
+  let roles: ReturnType<typeof signal<readonly string[]>>;
 
   const text = (): string => (fixture.nativeElement as HTMLElement).textContent ?? '';
 
@@ -31,11 +36,15 @@ describe('InvoiceDetailPage', () => {
 
   beforeEach(() => {
     salesApi = { get: vi.fn().mockReturnValue(of(sale())) };
+    returnsApi = { list: vi.fn().mockReturnValue(of([])) };
+    roles = signal<readonly string[]>(['cashier']);
     TestBed.configureTestingModule({
       imports: [InvoiceDetailPage],
       providers: [
         provideRouter([]),
         { provide: SalesApi, useValue: salesApi },
+        { provide: ReturnsApi, useValue: returnsApi },
+        { provide: SessionContextService, useValue: { roles } },
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 's-1' })) } },
       ],
     });
@@ -93,5 +102,42 @@ describe('InvoiceDetailPage', () => {
     button?.click();
     expect(printSpy).toHaveBeenCalledTimes(1);
     printSpy.mockRestore();
+  });
+
+  it('offers Return items to selling roles while something is still returnable', () => {
+    create();
+    const link = (fixture.nativeElement as HTMLElement).querySelector('a.return-link');
+    expect(link?.getAttribute('href')).toBe('/gst/s-1/return');
+    expect(link?.textContent).toContain('Return items');
+  });
+
+  it('hides Return items from accountants and when everything has been returned', () => {
+    roles.set(['accountant']);
+    create();
+    expect(text()).not.toContain('Return items');
+    roles.set(['manager']);
+    salesApi.get.mockReturnValue(of(sale({ lines: [{ ...sale().lines[0], returned_quantity: '2.000' }] })));
+    create();
+    expect(text()).not.toContain('Return items');
+  });
+
+  it('shows how much of a line has been returned and lists the invoice\'s credit notes', () => {
+    salesApi.get.mockReturnValue(of(sale({ lines: [{ ...sale().lines[0], returned_quantity: '1.000' }] })));
+    returnsApi.list.mockReturnValue(of([{ id: 'cn-1', credit_note_number: 'CN-MAIN-000001', credit_note_date: '2026-11-10', sale_id: 's-1', invoice_number: 'INV-MAIN-000001', branch_id: 'b-1', reason: 'Damaged', customer_name: '', grand_total: '100.00', created_at: '2026-11-10T10:00:00Z' }]));
+    create();
+    expect(returnsApi.list).toHaveBeenCalledWith({ saleId: 's-1' });
+    expect(text()).toContain('1.000 returned');
+    expect(text()).toContain('Credit notes for this invoice');
+    expect(text()).toContain('CN-MAIN-000001');
+    expect(text()).toContain('₹100.00 refunded');
+    const link = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('a')).find((a) => (a.textContent ?? '').includes('CN-MAIN-000001'));
+    expect(link?.getAttribute('href')).toBe('/gst/credit-notes/cn-1');
+  });
+
+  it('still shows the invoice when the credit notes cannot be loaded', () => {
+    returnsApi.list.mockReturnValue(throwError(() => new Error('offline')));
+    create();
+    expect(text()).toContain('INV-MAIN-000001');
+    expect(text()).not.toContain('Credit notes for this invoice');
   });
 });

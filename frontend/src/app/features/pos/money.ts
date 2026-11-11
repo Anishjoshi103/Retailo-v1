@@ -35,6 +35,11 @@ export function formatMoney(paise: number): string {
   return `${sign}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, '0')}`;
 }
 
+/** Format paise as rupees with the sign in front, e.g. 5 -> "₹0.05", -40 -> "-₹0.40". */
+export function formatRupees(paise: number): string {
+  return `${paise < 0 ? '-' : ''}₹${formatMoney(Math.abs(paise))}`;
+}
+
 /** Format milli-units as a three-decimal quantity string, e.g. 2000 -> "2.000". */
 export function formatQuantity(milli: number): string {
   return `${Math.floor(milli / 1000)}.${String(milli % 1000).padStart(3, '0')}`;

@@ -96,7 +96,7 @@
 
         <dl class="totals">
           <div><dt>Items total</dt><dd>₹{{ money(totals().exactPaise) }}</dd></div>
-          <div><dt>Round off</dt><dd>₹{{ money(totals().roundOffPaise) }}</dd></div>
+          <div><dt>Round off</dt><dd>{{ rupees(totals().roundOffPaise) }}</dd></div>
           <div class="grand"><dt>Total payable</dt><dd>₹{{ money(totals().grandTotalPaise) }}</dd></div>
         </dl>
 

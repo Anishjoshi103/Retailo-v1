@@ -1,4 +1,4 @@
-import { formatMoney, formatQuantity, lineGross, parseMoney, parseQuantity, priceCart } from './money';
+import { formatMoney, formatQuantity, formatRupees, lineGross, parseMoney, parseQuantity, priceCart } from './money';
 
 describe('money helpers', () => {
   it('parses decimal strings exactly into paise', () => {
@@ -30,6 +30,12 @@ describe('money helpers', () => {
     expect(formatMoney(0)).toBe('0.00');
     expect(formatQuantity(2000)).toBe('2.000');
     expect(formatQuantity(333)).toBe('0.333');
+  });
+
+  it('formats rupees with the sign in front', () => {
+    expect(formatRupees(10040)).toBe('₹100.40');
+    expect(formatRupees(0)).toBe('₹0.00');
+    expect(formatRupees(-40)).toBe('-₹0.40');
   });
 
   it('rounds a line gross half-up to paise', () => {

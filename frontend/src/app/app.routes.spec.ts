@@ -44,6 +44,15 @@ describe('application routes', () => {
     }
   });
 
+  it('serves the return screen for selling roles only, and requires a branch', () => {
+    const shell = routes.find((route) => route.path === '');
+    const route = shell?.children?.find((child) => child.path === 'gst/:id/return');
+    expect(route?.canActivate).toContain(roleBranchGuard);
+    expect(route?.data?.['branchRequired']).toBe(true);
+    expect(route?.data?.['roles']).toEqual(['owner', 'admin', 'manager', 'cashier']);
+    expect(route?.loadComponent).toBeDefined();
+  });
+
   it('serves the billing screen at pos for selling roles only, and requires a branch', () => {
     const shell = routes.find((route) => route.path === '');
     const pos = shell?.children?.find((route) => route.path === 'pos');
