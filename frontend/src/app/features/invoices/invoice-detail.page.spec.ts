@@ -12,7 +12,7 @@ function sale(overrides: Partial<Sale> = {}): Sale {
     taxable_total: '169.50', total_tax: '30.50', round_off: '0.00', grand_total: '200.00', created_at: '2026-11-09T10:00:00Z',
     seller_gstin: '27AAPFU0939F1ZV', seller_state_code: '27', place_of_supply_state_code: '27',
     cgst_total: '15.25', sgst_total: '15.25', igst_total: '0.00',
-    lines: [{ product_id: 'p-1', sku: 'RICE-1', name: 'Rice', hsn_code: '1006', unit: 'kg', quantity: '2.000', unit_price: '100.00', gst_rate: '18.00', taxable_value: '169.50', cgst_amount: '15.25', sgst_amount: '15.25', igst_amount: '0.00', line_total: '200.00' }],
+    lines: [{ id: 'sl-1', returned_quantity: '0.000', product_id: 'p-1', sku: 'RICE-1', name: 'Rice', hsn_code: '1006', unit: 'kg', quantity: '2.000', unit_price: '100.00', gst_rate: '18.00', taxable_value: '169.50', cgst_amount: '15.25', sgst_amount: '15.25', igst_amount: '0.00', line_total: '200.00' }],
     payments: [{ method: 'upi', amount: '200.00', reference: 'UPI-9' }],
     ...overrides,
   };
