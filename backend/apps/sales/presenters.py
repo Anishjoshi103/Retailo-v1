@@ -1,4 +1,10 @@
+from decimal import Decimal
+
+from django.db.models import Sum
+
 from apps.sales.models import CreditNote, CreditNoteLine, Sale, SaleLine, SalePayment
+
+QUANTITY_PLACES = Decimal("0.001")
 
 
 def serialize_sale_summary(sale: Sale) -> dict:
@@ -16,6 +22,11 @@ def serialize_sale(sale: Sale) -> dict:
     """Full invoice body shared by POST (create/replay) and GET (detail)."""
     tenant_id = sale.tenant_id
     lines = SaleLine.objects.for_tenant(tenant_id).filter(sale=sale).order_by("id")
+    returned = {
+        row["sale_line_id"]: row["total"]
+        for row in CreditNoteLine.objects.for_tenant(tenant_id)
+        .filter(sale_line__sale=sale).values("sale_line_id").annotate(total=Sum("quantity"))
+    }
     payments = SalePayment.objects.for_tenant(tenant_id).filter(sale=sale).order_by("id")
     return {
         **serialize_sale_summary(sale),
@@ -28,6 +39,8 @@ def serialize_sale(sale: Sale) -> dict:
             {
                 "id": str(line.id), "product_id": str(line.product_id), "sku": line.sku, "name": line.name,
                 "hsn_code": line.hsn_code, "unit": line.unit, "quantity": str(line.quantity),
+                # Quantity already returned through credit notes; the rest can still be returned.
+                "returned_quantity": str(Decimal(returned.get(line.id) or 0).quantize(QUANTITY_PLACES)),
                 "unit_price": str(line.unit_price), "gst_rate": str(line.gst_rate),
                 "taxable_value": str(line.taxable_value), "cgst_amount": str(line.cgst_amount),
                 "sgst_amount": str(line.sgst_amount), "igst_amount": str(line.igst_amount),
@@ -39,6 +52,17 @@ def serialize_sale(sale: Sale) -> dict:
             {"method": p.method, "amount": str(p.amount), "reference": p.reference}
             for p in payments
         ],
+    }
+
+
+def serialize_credit_note_summary(note: CreditNote) -> dict:
+    """Compact row for lists: no lines."""
+    return {
+        "id": str(note.id), "credit_note_number": note.credit_note_number,
+        "credit_note_date": note.credit_note_date.isoformat(), "sale_id": str(note.sale_id),
+        "invoice_number": note.sale.invoice_number, "branch_id": str(note.branch_id),
+        "reason": note.reason, "customer_name": note.customer_name,
+        "grand_total": str(note.grand_total), "created_at": note.created_at.isoformat(),
     }
 
 

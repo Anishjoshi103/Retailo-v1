@@ -11,13 +11,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.inventory.models import InventoryBalance, StockMovement
+from apps.sales.listing import filter_documents, page_bounds, uuid_param
 from apps.sales.models import CreditNote, CreditNoteLine, Sale, SaleLine
 from apps.sales.numbering import InvoiceNumberError, allocate_credit_note_number
-from apps.sales.presenters import serialize_credit_note
+from apps.sales.presenters import serialize_credit_note, serialize_credit_note_summary
 from apps.sales.returns import price_return
 from apps.sales.serializers import ReturnInputSerializer
 from apps.tenancy.access import authorized_branches
-from apps.tenancy.permissions import require_membership_role
+from apps.tenancy.permissions import active_tenant_membership, require_membership_role
 
 RETURNING_ROLES = {"owner", "admin", "manager", "cashier"}
 
@@ -151,3 +152,41 @@ class SaleReturnView(APIView):
         if prior.request_hash != request_hash:
             return Response({"detail": "Idempotency-Key was already used for a different return."}, status=status.HTTP_409_CONFLICT)
         return Response({**serialize_credit_note(prior), "replayed": True}, status=status.HTTP_200_OK)
+
+
+class CreditNoteListView(APIView):
+    """List credit notes for the caller's granted branches, newest first."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        membership = active_tenant_membership(request)
+        queryset = CreditNote.objects.for_tenant(membership.tenant_id).filter(
+            branch__in=authorized_branches(membership)
+        ).select_related("sale")
+        queryset = filter_documents(
+            queryset, request.query_params, membership,
+            date_field="credit_note_date", number_field=None,
+        )
+        number = request.query_params.get("credit_note_number")
+        if number:
+            queryset = queryset.filter(credit_note_number=number.strip().upper())
+        sale_id = uuid_param(request.query_params, "sale_id")
+        if sale_id is not None:
+            queryset = queryset.filter(sale_id=sale_id)
+        start, stop = page_bounds(request.query_params)
+        return Response([serialize_credit_note_summary(note) for note in queryset[start:stop]])
+
+
+class CreditNoteDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, credit_note_id):
+        membership = active_tenant_membership(request)
+        note = CreditNote.objects.for_tenant(membership.tenant_id).filter(
+            pk=credit_note_id, branch__in=authorized_branches(membership)
+        ).select_related("sale").first()
+        # Unknown, foreign-store and ungranted-branch credit notes are indistinguishable.
+        if note is None:
+            raise NotFound("Credit note not found.")
+        return Response(serialize_credit_note(note))
