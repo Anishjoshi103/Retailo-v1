@@ -6,7 +6,7 @@ import { finalize } from 'rxjs';
 import { ApiClient } from '../../core/api/api-client.service';
 import { ApiError } from '../../core/api/api-error.model';
 import { SessionContextService } from '../../core/auth/session-context.service';
-import { formatMoney, formatQuantity, lineGross, parseMoney, parseQuantity, priceCart } from './money';
+import { formatMoney, formatQuantity, formatRupees, lineGross, parseMoney, parseQuantity, priceCart } from './money';
 import { SalesApi } from './sales.api';
 import { CreateSaleRequest, PaymentMethod, Sale } from './sales.models';
 
@@ -101,6 +101,7 @@ export class PosPage {
     && this.paymentsValid() && this.remainingPaise() === 0);
 
   readonly money = formatMoney;
+  readonly rupees = formatRupees;
 
   search(): void {
     const text = this.searchText().trim();

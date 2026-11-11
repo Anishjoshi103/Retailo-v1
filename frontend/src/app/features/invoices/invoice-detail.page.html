@@ -1,8 +1,13 @@
 <section class="invoice" aria-labelledby="invoice-title">
   <nav class="actions no-print">
     <a class="back" routerLink="/gst">← All invoices</a>
-    @if (sale()) {
-      <button type="button" class="primary" (click)="print()">Print</button>
+    @if (sale(); as current) {
+      <span class="action-group">
+        @if (canReturn(current)) {
+          <a class="return-link" [routerLink]="['/gst', current.id, 'return']">Return items</a>
+        }
+        <button type="button" class="primary" (click)="print()">Print</button>
+      </span>
     }
   </nav>
 
@@ -45,7 +50,7 @@
               <tr>
                 <td><span class="name">{{ line.name }}</span><span class="sub">{{ line.sku }}</span></td>
                 <td>{{ line.hsn_code || '—' }}</td>
-                <td class="numeric">{{ line.quantity }} {{ line.unit }}</td>
+                <td class="numeric">{{ line.quantity }} {{ line.unit }}@if (line.returned_quantity !== '0.000') { <span class="sub">{{ line.returned_quantity }} returned</span> }</td>
                 <td class="numeric">₹{{ line.unit_price }}</td>
                 <td class="numeric">₹{{ line.taxable_value }}</td>
                 <td class="numeric">{{ line.gst_rate }}%</td>
@@ -78,5 +83,20 @@
       </div>
       <p class="inclusive-note">Prices are inclusive of GST. Tax shown is the portion contained in the total.</p>
     </article>
+
+    @if (creditNotes().length > 0) {
+      <section class="credit-notes no-print" aria-labelledby="notes-heading">
+        <h2 id="notes-heading">Credit notes for this invoice</h2>
+        <ul>
+          @for (note of creditNotes(); track note.id) {
+            <li>
+              <a class="return-link" [routerLink]="['/gst/credit-notes', note.id]">{{ note.credit_note_number }}</a>
+              <span class="sub">{{ note.credit_note_date }} · {{ note.reason }}</span>
+              <span class="refund-amount">₹{{ note.grand_total }} refunded</span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
   }
 </section>

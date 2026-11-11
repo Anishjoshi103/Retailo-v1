@@ -35,6 +35,13 @@ td { padding: var(--space-3); border-top: 1px solid var(--color-border); font-si
 .notice-error { border: 1px solid var(--color-danger); border-radius: var(--radius-md); color: var(--color-danger); }
 @media (min-width: 720px) { .foot { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 720px) { .invoice { padding: var(--space-4); } }
+.action-group { display: flex; align-items: center; gap: var(--space-4); }
+.return-link { color: var(--color-brand); font-weight: var(--font-weight-bold); }
+.credit-notes { margin-top: var(--space-5); padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); }
+.credit-notes ul { margin: 0; padding: 0; list-style: none; }
+.credit-notes li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--color-border); }
+.credit-notes li:first-child { border-top: 0; }
+.refund-amount { font-weight: var(--font-weight-bold); font-variant-numeric: tabular-nums; white-space: nowrap; }
 @media print {
   .invoice { width: 100%; padding: 0; }
   .sheet { border: 0; padding: 0; }
