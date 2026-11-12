@@ -1,0 +1,72 @@
+<section class="settings" aria-labelledby="settings-title">
+  <header class="page-header">
+    <p class="eyebrow">SETTINGS</p>
+    <h1 id="settings-title">Branches &amp; GST</h1>
+    <p class="intro">Each branch needs a GST state before it can issue invoices. Add the GSTIN too if the branch is registered.</p>
+  </header>
+
+  @if (loading()) {
+    <p class="notice" role="status">Loading branches…</p>
+  } @else if (loadError()) {
+    <div class="notice notice-error" role="alert">
+      <span>{{ loadError() }}</span>
+      <button type="button" class="text-button" (click)="load()">Try again</button>
+    </div>
+  } @else if (branches().length === 0) {
+    <div class="notice">No branches are available to you.</div>
+  } @else {
+    @for (branch of branches(); track branch.id) {
+      <article class="card">
+        <header class="card-head">
+          <div>
+            <h2>{{ branch.name }}</h2>
+            <p class="sub">Branch code {{ branch.code }}</p>
+          </div>
+          @if (ready(branch)) {
+            <span class="badge badge-ok">Ready to bill</span>
+          } @else {
+            <span class="badge badge-warn">Not ready to bill</span>
+          }
+        </header>
+
+        @if (codeProblem(branch)) {
+          <p class="notice notice-error" role="alert">{{ codeProblem(branch) }} This branch cannot issue invoices until its code is changed.</p>
+        }
+
+        <div class="fields">
+          <label>
+            <span>GST state</span>
+            <select [value]="draft(branch).stateCode" (change)="setState(branch, inputValue($event))">
+              <option value="" [selected]="draft(branch).stateCode === ''">Select a state</option>
+              @for (state of states; track state.code) {
+                <option [value]="state.code" [selected]="draft(branch).stateCode === state.code">{{ state.name }} ({{ state.code }})</option>
+              }
+            </select>
+          </label>
+          <label>
+            <span>GSTIN (optional)</span>
+            <input type="text" maxlength="15" autocomplete="off" placeholder="27AAPFU0939F1ZV"
+              [class.invalid]="gstinError(branch) !== ''" [attr.aria-invalid]="gstinError(branch) !== ''"
+              [value]="draft(branch).gstin" (input)="setGstin(branch, inputValue($event))" />
+          </label>
+        </div>
+        @if (gstinError(branch)) {
+          <p class="field-error" role="alert">{{ gstinError(branch) }}</p>
+        }
+
+        <div class="card-foot">
+          <button type="button" class="primary" [disabled]="!canSave(branch)" (click)="save(branch)">
+            {{ saveState(branch)?.kind === 'saving' ? 'Saving…' : 'Save' }}
+          </button>
+          @if (saveState(branch); as state) {
+            @if (state.kind === 'saved') {
+              <span class="saved" role="status">Saved</span>
+            } @else if (state.kind === 'error') {
+              <span class="field-error" role="alert">{{ state.message }}</span>
+            }
+          }
+        </div>
+      </article>
+    }
+  }
+</section>
