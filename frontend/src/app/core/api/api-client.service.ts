@@ -9,6 +9,7 @@ export class ApiClient {
   get<T>(path: string, options: ApiRequestOptions = {}): Observable<T> { return this.http.get<T>(this.url(path), options); }
   post<R, B>(path: string, body: B, options: ApiRequestOptions = {}): Observable<R> { return this.http.post<R>(this.url(path), body, options); }
   put<R, B>(path: string, body: B, options: ApiRequestOptions = {}): Observable<R> { return this.http.put<R>(this.url(path), body, options); }
+  patch<R, B>(path: string, body: B, options: ApiRequestOptions = {}): Observable<R> { return this.http.patch<R>(this.url(path), body, options); }
   delete<T>(path: string, options: ApiRequestOptions = {}): Observable<T> { return this.http.delete<T>(this.url(path), options); }
   private url(path: string): string { return `${this.config.apiBaseUrl.replace(/\/$/, '')}/${path.replace(/^\//, '')}`; }
 }
