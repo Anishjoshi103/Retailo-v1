@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { ApiError } from '../../core/api/api-error.model';
 import { BranchesApi, BranchGst } from './branches.api';
 import { branchCodeProblem, GST_STATES, isValidGstinFormat, stateName } from './gst-states';
@@ -13,6 +14,7 @@ type SaveState = { readonly kind: 'saving' } | { readonly kind: 'saved' } | { re
 @Component({
   selector: 'app-settings-page',
   standalone: true,
+  imports: [RouterLink],
   templateUrl: './settings.page.html',
   styleUrl: './settings.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
