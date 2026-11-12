@@ -16,6 +16,7 @@ export const routes: Routes = [
     { path: 'gst/:id', canActivate: [roleBranchGuard], data: { title: 'Invoice', branchRequired: true, roles: allRoles }, loadComponent: () => import('./features/invoices/invoice-detail.page').then((m) => m.InvoiceDetailPage) },
     { path: 'gst/:id/return', canActivate: [roleBranchGuard], data: { title: 'Return items', branchRequired: true, roles: ['owner', 'admin', 'manager', 'cashier'] }, loadComponent: () => import('./features/returns/return.page').then((m) => m.ReturnPage) },
     { path: 'settings', canActivate: [roleBranchGuard], data: { title: 'Settings', roles: ['owner', 'admin'] }, loadComponent: () => import('./features/settings/settings.page').then((m) => m.SettingsPage) },
+    { path: 'settings/staff', canActivate: [roleBranchGuard], data: { title: 'Staff', roles: ['owner', 'admin'] }, loadComponent: () => import('./features/staff/staff.page').then((m) => m.StaffPage) },
     ...featurePaths.map((path) => ({ path, canActivate: [roleBranchGuard], data: { title: featureTitle(path), ...(path === 'reports' ? { roles: ['owner', 'admin', 'manager'] } : {}), }, loadComponent: () => import('./features/placeholder/feature-placeholder.page').then((m) => m.FeaturePlaceholderPage) }))
   ] },
   { path: '**', redirectTo: '' }

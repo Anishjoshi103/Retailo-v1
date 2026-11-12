@@ -1,0 +1,135 @@
+<section class="staff" aria-labelledby="staff-title">
+  <nav class="tabs" aria-label="Settings sections">
+    <a routerLink="/settings">Branches &amp; GST</a>
+    <a routerLink="/settings/staff" aria-current="page">Staff</a>
+  </nav>
+
+  <header class="page-header">
+    <p class="eyebrow">SETTINGS</p>
+    <h1 id="staff-title">Staff</h1>
+    <p class="intro">Add people, choose what they can do and which branches they work in. Removing access takes effect immediately.</p>
+  </header>
+
+  @if (loading()) {
+    <p class="notice" role="status">Loading staff…</p>
+  } @else if (loadError()) {
+    <div class="notice notice-error" role="alert">
+      <span>{{ loadError() }}</span>
+      <button type="button" class="text-button" (click)="load()">Try again</button>
+    </div>
+  } @else {
+    <div class="card">
+      <h2>Add a person</h2>
+      <div class="fields">
+        <label>
+          <span>Email</span>
+          <input type="email" autocomplete="off" inputmode="email" placeholder="name@example.com"
+            [value]="inviteEmail()" (input)="inviteEmail.set(inputValue($event))" />
+        </label>
+        <label>
+          <span>Name (optional)</span>
+          <input type="text" maxlength="150" [value]="inviteName()" (input)="inviteName.set(inputValue($event))" />
+        </label>
+        <label>
+          <span>Role</span>
+          <select [value]="inviteRole()" (change)="setInviteRole(inputValue($event))">
+            @for (option of roleOptions(); track option.value) {
+              <option [value]="option.value" [selected]="option.value === inviteRole()">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+      </div>
+      <p class="hint">{{ roleHint(inviteRole()) }}</p>
+      <fieldset class="branches">
+        <legend>Branches</legend>
+        @for (branch of branches(); track branch.id) {
+          <label class="check">
+            <input type="checkbox" [checked]="inviteBranchIds().includes(branch.id)" (change)="toggleInviteBranch(branch.id)" />
+            <span>{{ branch.name }}</span>
+          </label>
+        }
+      </fieldset>
+      @if (inviteEmail() && !emailValid()) {
+        <p class="field-error" role="alert">Enter a valid email address.</p>
+      }
+      @if (inviteMessage(); as message) {
+        <p class="message" [class.message-error]="message.kind === 'error'" [class.message-warn]="message.kind === 'warn'" [attr.role]="message.kind === 'error' ? 'alert' : 'status'">{{ message.text }}</p>
+      }
+      <button type="button" class="primary" [disabled]="!canInvite()" (click)="invite()">
+        {{ inviting() ? 'Sending…' : 'Send invitation' }}
+      </button>
+    </div>
+
+    <h2 class="list-title">People ({{ members().length }})</h2>
+    <ul class="members">
+      @for (member of members(); track member.id) {
+        <li class="card member">
+          <div class="member-head">
+            <div class="who">
+              <span class="name">{{ member.display_name || member.email }}@if (member.is_self) { <span class="you">(you)</span> }</span>
+              <span class="sub">{{ member.display_name ? member.email + ' · ' : '' }}{{ roleLabels[member.role] }} · {{ branchNames(member) }}</span>
+            </div>
+            <span class="badge" [class.badge-ok]="status(member) === 'Active'" [class.badge-warn]="status(member) !== 'Active'">{{ status(member) }}</span>
+          </div>
+
+          @if (member.can_manage) {
+            @if (editingId() === member.id) {
+              <div class="edit">
+                <label>
+                  <span>Role</span>
+                  <select [value]="editRole()" (change)="setEditRole(inputValue($event))">
+                    @for (option of roleOptions(); track option.value) {
+                      <option [value]="option.value" [selected]="option.value === editRole()">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+                <fieldset class="branches">
+                  <legend>Branches</legend>
+                  @for (branch of branches(); track branch.id) {
+                    <label class="check">
+                      <input type="checkbox" [checked]="editBranchIds().includes(branch.id)" (change)="toggleEditBranch(branch.id)" />
+                      <span>{{ branch.name }}</span>
+                    </label>
+                  }
+                </fieldset>
+                @if (editBranchIds().length === 0) {
+                  <p class="field-error" role="alert">Choose at least one branch.</p>
+                }
+                <div class="actions">
+                  <button type="button" class="primary" [disabled]="!canSaveEdit(member)" (click)="saveEdit(member)">Save</button>
+                  <button type="button" class="text-button" (click)="cancelEdit()">Cancel</button>
+                </div>
+              </div>
+            } @else if (confirmingId() === member.id) {
+              <div class="confirm" role="alertdialog" [attr.aria-label]="'Remove access for ' + member.email">
+                <p>Remove access for {{ member.display_name || member.email }}? They are signed out of the app straight away. Their past sales stay on record.</p>
+                <div class="actions">
+                  <button type="button" class="danger" [disabled]="busyId() !== null" (click)="deactivate(member)">Remove access</button>
+                  <button type="button" class="text-button" (click)="cancelDeactivate()">Cancel</button>
+                </div>
+              </div>
+            } @else {
+              <div class="actions">
+                @if (member.is_active) {
+                  <button type="button" class="secondary" (click)="startEdit(member)">Edit</button>
+                  @if (member.invited) {
+                    <button type="button" class="text-button" [disabled]="busyId() !== null" (click)="resend(member)">Resend invitation</button>
+                  }
+                  <button type="button" class="text-button" (click)="askDeactivate(member)">Remove access</button>
+                } @else {
+                  <button type="button" class="secondary" [disabled]="busyId() !== null" (click)="reactivate(member)">Restore access</button>
+                }
+              </div>
+            }
+          }
+
+          @if (rowMessage(); as row) {
+            @if (row.id === member.id) {
+              <p class="message" [class.message-error]="row.message.kind === 'error'" [class.message-warn]="row.message.kind === 'warn'" [attr.role]="row.message.kind === 'error' ? 'alert' : 'status'">{{ row.message.text }}</p>
+            }
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>

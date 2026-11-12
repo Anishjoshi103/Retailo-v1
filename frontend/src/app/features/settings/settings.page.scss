@@ -1,5 +1,8 @@
 :host { display: block; color: var(--color-text); }
 .settings { width: min(100%, 48rem); margin-inline: auto; padding: var(--space-6); }
+.tabs { display: flex; gap: var(--space-4); margin-bottom: var(--space-4); }
+.tabs a { padding-bottom: var(--space-1); color: var(--color-text-secondary); font-weight: var(--font-weight-bold); text-decoration: none; border-bottom: 2px solid transparent; }
+.tabs a[aria-current='page'] { color: var(--color-brand); border-bottom-color: var(--color-brand); }
 .page-header { margin-bottom: var(--space-5); }
 .eyebrow { margin: 0 0 var(--space-2); color: var(--color-brand); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); letter-spacing: var(--letter-spacing-eyebrow); }
 h1 { margin: 0; color: var(--color-heading); font-size: clamp(1.5rem, 4vw, 2rem); letter-spacing: var(--letter-spacing-tight); }

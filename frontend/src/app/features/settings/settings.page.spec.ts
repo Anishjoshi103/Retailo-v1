@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { ApiError } from '../../core/api/api-error.model';
 import { BranchesApi, BranchGst } from './branches.api';
@@ -27,7 +28,13 @@ describe('SettingsPage', () => {
 
   beforeEach(() => {
     api = { list: vi.fn().mockReturnValue(of([branch()])), updateGst: vi.fn().mockImplementation((id: string, body: { gstin: string; state_code: string }) => of(branch({ id, ...body }))) };
-    TestBed.configureTestingModule({ imports: [SettingsPage], providers: [{ provide: BranchesApi, useValue: api }] });
+    TestBed.configureTestingModule({ imports: [SettingsPage], providers: [provideRouter([]), { provide: BranchesApi, useValue: api }] });
+  });
+
+  it('links to the staff section', () => {
+    create();
+    const hrefs = Array.from(element().querySelectorAll('nav.tabs a')).map((a) => a.getAttribute('href'));
+    expect(hrefs).toEqual(['/settings', '/settings/staff']);
   });
 
   it('lists the branches and says which are not ready to bill', () => {
