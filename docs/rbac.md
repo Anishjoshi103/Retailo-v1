@@ -30,6 +30,10 @@ This matrix describes the API routes currently registered in `config/urls.py` an
 | `GET /api/v1/credit-notes/{id}` | Read | Read | Read | Read | Read | Active tenant and active branch grant; others receive 404 |
 | `GET /api/v1/branches` | Read | Read | Read | Read | Read | Only active branches granted to the membership |
 | `PATCH /api/v1/branches/{id}` | Allow | Allow | Deny | Deny | Deny | Active tenant and active branch grant; others receive 404 |
+| `GET /api/v1/staff` | Read | Read | Deny | Deny | Deny | Members of the caller's own store only |
+| `POST /api/v1/staff` | Allow | Allow (not admins) | Deny | Deny | Deny | Owner may add admin/manager/cashier/accountant; admin may add manager/cashier/accountant. Branches limited to the caller's own grants |
+| `PATCH /api/v1/staff/{id}` | Allow | Allow (not admins/owner) | Deny | Deny | Deny | Cannot change oneself; admins cannot change admins or the owner; other stores' members return 404 |
+| `POST /api/v1/staff/{id}/resend-invite` | Allow | Allow (not admins/owner) | Deny | Deny | Deny | Only for people who have not yet set a password |
 | `GET /api/v1/auth/me` | Read | Read | Read | Read | Read | Authenticated active membership |
 
 The write decisions above are enforced by the endpoint role checks. Read routes require an authenticated active tenant membership; the branch-scoped routes additionally verify an active `BranchAccess`. A supplied branch identifier is never authorization by itself.
