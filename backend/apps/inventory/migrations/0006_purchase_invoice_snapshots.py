@@ -77,7 +77,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name="purchaseinvoice",
-            constraint=models.UniqueConstraint(condition=~models.Q(("invoice_number", "")), fields=("tenant", "supplier", "invoice_number"), name="uq_purchase_invoice_supplier_number"),
+            constraint=models.UniqueConstraint(condition=models.Q(("invoice_number__gt", "")), fields=("tenant", "supplier", "invoice_number"), name="uq_purchase_invoice_supplier_number"),
         ),
         migrations.AddConstraint(
             model_name="purchaseinvoice",

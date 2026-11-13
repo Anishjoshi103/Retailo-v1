@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name="supplier",
-            constraint=models.UniqueConstraint(condition=~models.Q(("gstin", "")), fields=("tenant", "gstin"), name="uq_supplier_tenant_gstin"),
+            constraint=models.UniqueConstraint(condition=models.Q(("gstin__gt", "")), fields=("tenant", "gstin"), name="uq_supplier_tenant_gstin"),
         ),
         migrations.AddIndex(
             model_name="supplier",

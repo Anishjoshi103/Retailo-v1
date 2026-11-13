@@ -40,6 +40,6 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(model_name="inventorybalance", constraint=models.UniqueConstraint(fields=("tenant", "branch", "product"), name="uq_inventory_tenant_branch_product")),
         migrations.AddIndex(model_name="inventorybalance", index=models.Index(fields=["tenant", "branch", "product"], name="ix_inventory_lookup")),
         migrations.AddConstraint(model_name="stockmovement", constraint=models.CheckConstraint(condition=~models.Q(("quantity_delta", 0)), name="ck_stock_movement_nonzero")),
-        migrations.AddConstraint(model_name="stockmovement", constraint=models.UniqueConstraint(condition=~models.Q(("idempotency_key", "")), fields=("tenant", "idempotency_key"), name="uq_stock_move_tenant_idem")),
+        migrations.AddConstraint(model_name="stockmovement", constraint=models.UniqueConstraint(condition=models.Q(("idempotency_key__gt", "")), fields=("tenant", "idempotency_key"), name="uq_stock_move_tenant_idem")),
         migrations.AddIndex(model_name="stockmovement", index=models.Index(fields=["tenant", "branch", "product", "created_at"], name="ix_stock_move_lookup")),
     ]
