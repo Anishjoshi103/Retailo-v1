@@ -126,7 +126,8 @@ jobs:
 
   backend-sqlserver:
     name: Backend tests on SQL Server
-    runs-on: ubuntu-latest
+    # Pinned: the ubuntu-latest label is migrating to a newer release than Microsoft's driver repository may support.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     defaults:
       run:
@@ -164,11 +165,19 @@ jobs:
             backend/requirements-dev.txt
 
       - name: Install Microsoft ODBC Driver 18
+        env:
+          ACCEPT_EULA: "Y"
         run: |
-          curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
-          curl -fsSL "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list" | sudo tee /etc/apt/sources.list.d/mssql-release.list
           sudo apt-get update
-          sudo ACCEPT_EULA=Y apt-get install --yes --no-install-recommends msodbcsql18 unixodbc
+          sudo apt-get install --yes --no-install-recommends unixodbc curl gnupg
+          # The runner image may already know Microsoft's repository; only add it if the install fails.
+          if ! sudo -E apt-get install --yes --no-install-recommends msodbcsql18; then
+            curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --batch --yes --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+            curl -fsSL "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list" | sudo tee /etc/apt/sources.list.d/mssql-release.list > /dev/null
+            sudo apt-get update
+            sudo -E apt-get install --yes --no-install-recommends msodbcsql18
+          fi
+          odbcinst -q -d
 
       - name: Install Python dependencies
         run: |
