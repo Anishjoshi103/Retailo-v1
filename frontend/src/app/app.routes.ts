@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { roleBranchGuard } from './core/auth/role-branch.guard';
 
-const featurePaths = ['inventory', 'reports'];
+const featurePaths = ['reports'];
 const allRoles = ['owner', 'admin', 'manager', 'cashier', 'accountant'];
 export const routes: Routes = [
   { path: 'auth', loadChildren: () => import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES) },
@@ -17,6 +17,7 @@ export const routes: Routes = [
     { path: 'gst/:id/return', canActivate: [roleBranchGuard], data: { title: 'Return items', branchRequired: true, roles: ['owner', 'admin', 'manager', 'cashier'] }, loadComponent: () => import('./features/returns/return.page').then((m) => m.ReturnPage) },
     { path: 'settings', canActivate: [roleBranchGuard], data: { title: 'Settings', roles: ['owner', 'admin'] }, loadComponent: () => import('./features/settings/settings.page').then((m) => m.SettingsPage) },
     { path: 'settings/staff', canActivate: [roleBranchGuard], data: { title: 'Staff', roles: ['owner', 'admin'] }, loadComponent: () => import('./features/staff/staff.page').then((m) => m.StaffPage) },
+    { path: 'inventory', canActivate: [roleBranchGuard], data: { title: 'Inventory', branchRequired: true, roles: allRoles }, loadComponent: () => import('./features/inventory/inventory.page').then((m) => m.InventoryPage) },
     ...featurePaths.map((path) => ({ path, canActivate: [roleBranchGuard], data: { title: featureTitle(path), ...(path === 'reports' ? { roles: ['owner', 'admin', 'manager'] } : {}), }, loadComponent: () => import('./features/placeholder/feature-placeholder.page').then((m) => m.FeaturePlaceholderPage) }))
   ] },
   { path: '**', redirectTo: '' }

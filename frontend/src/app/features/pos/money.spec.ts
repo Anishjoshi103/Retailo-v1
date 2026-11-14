@@ -1,4 +1,4 @@
-import { formatMoney, formatQuantity, formatRupees, lineGross, parseMoney, parseQuantity, priceCart } from './money';
+import { formatMoney, formatQuantity, formatRupees, formatSignedQuantity, parseQuantityOrZero, parseSignedQuantity, lineGross, parseMoney, parseQuantity, priceCart } from './money';
 
 describe('money helpers', () => {
   it('parses decimal strings exactly into paise', () => {
@@ -30,6 +30,23 @@ describe('money helpers', () => {
     expect(formatMoney(0)).toBe('0.00');
     expect(formatQuantity(2000)).toBe('2.000');
     expect(formatQuantity(333)).toBe('0.333');
+  });
+
+  it('parses a quantity of zero or more, rejecting negatives and over-precise values', () => {
+    expect(parseQuantityOrZero('0')).toBe(0);
+    expect(parseQuantityOrZero('12.5')).toBe(12500);
+    for (const bad of ['', '-1', '1.2345', 'x', '.5']) expect(parseQuantityOrZero(bad), bad).toBeNull();
+  });
+
+  it('parses and formats signed quantities', () => {
+    expect(parseSignedQuantity('-2.5')).toBe(-2500);
+    expect(parseSignedQuantity('+4')).toBe(4000);
+    expect(parseSignedQuantity('0')).toBe(0);
+    expect(parseSignedQuantity(' 3 ')).toBe(3000);
+    for (const bad of ['', '--1', '1-', '1.2345', 'x', '-']) expect(parseSignedQuantity(bad), bad).toBeNull();
+    expect(formatSignedQuantity(-2500)).toBe('-2.500');
+    expect(formatSignedQuantity(4000)).toBe('4.000');
+    expect(formatSignedQuantity(0)).toBe('0.000');
   });
 
   it('formats rupees with the sign in front', () => {

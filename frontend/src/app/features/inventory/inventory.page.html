@@ -1,0 +1,147 @@
+<section class="inventory" aria-labelledby="inventory-title">
+  <header class="page-header">
+    <p class="eyebrow">INVENTORY</p>
+    <h1 id="inventory-title">Stock on hand</h1>
+    <p class="intro">What is in this branch right now. Sales, returns and purchases update it automatically.</p>
+  </header>
+
+  @if (notice()) {
+    <p class="notice notice-ok" role="status">{{ notice() }}</p>
+  }
+
+  @if (target(); as current) {
+    <div class="card adjust" role="group" aria-labelledby="adjust-title">
+      <div class="card-head">
+        <div>
+          <h2 id="adjust-title">Adjust stock</h2>
+          <p class="sub">{{ current.name }} · {{ current.sku }} · on hand {{ formatSigned(current.onHandMilli) }}</p>
+        </div>
+        <button type="button" class="text-button" (click)="cancelAdjust()">Cancel</button>
+      </div>
+
+      <div class="modes" role="radiogroup" aria-label="How to adjust">
+        <button type="button" class="chip" role="radio" [attr.aria-checked]="mode() === 'count'" [class.active]="mode() === 'count'" (click)="setMode('count')">I counted it</button>
+        <button type="button" class="chip" role="radio" [attr.aria-checked]="mode() === 'change'" [class.active]="mode() === 'change'" (click)="setMode('change')">Add or remove</button>
+      </div>
+
+      @if (mode() === 'count') {
+        <label>
+          <span>Counted quantity</span>
+          <input type="text" inputmode="decimal" placeholder="0" [class.invalid]="inputError() !== ''" [attr.aria-invalid]="inputError() !== ''"
+            [value]="countedText()" (input)="countedText.set(inputValue($event))" />
+        </label>
+      } @else {
+        <label>
+          <span>Change (use - to remove)</span>
+          <input type="text" inputmode="decimal" placeholder="e.g. 5 or -2.5" [class.invalid]="inputError() !== ''" [attr.aria-invalid]="inputError() !== ''"
+            [value]="changeText()" (input)="changeText.set(inputValue($event))" />
+        </label>
+      }
+      @if (inputError()) {
+        <p class="field-error" role="alert">{{ inputError() }}</p>
+      }
+
+      @if (delta() !== null) {
+        <p class="preview" role="status">
+          @if (delta() === 0) {
+            No change: the count matches what is on hand.
+          } @else {
+            Stock changes by <strong>{{ formatSigned(delta() ?? 0) }}</strong>, from {{ formatSigned(current.onHandMilli) }} to <strong>{{ formatSigned(newOnHandMilli() ?? 0) }}</strong>.
+          }
+        </p>
+      }
+
+      <div class="chips">
+        @for (quick of reasons; track quick) {
+          <button type="button" class="chip" [class.active]="reason() === quick" (click)="reason.set(quick)">{{ quick }}</button>
+        }
+      </div>
+      <label>
+        <span>Reason (kept on record)</span>
+        <input type="text" [attr.maxlength]="maxNoteLength" [value]="reason()" (input)="reason.set(inputValue($event))" />
+      </label>
+
+      @if (adjustError()) {
+        <p class="field-error" role="alert">{{ adjustError() }}</p>
+      }
+      <button type="button" class="primary" [disabled]="!canSubmit()" (click)="submit()">
+        {{ submitting() ? 'Saving…' : 'Save adjustment' }}
+      </button>
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="notice" role="status">Loading stock…</p>
+  } @else if (loadError()) {
+    <div class="notice notice-error" role="alert">
+      <span>{{ loadError() }}</span>
+      <button type="button" class="text-button" (click)="load()">Try again</button>
+    </div>
+  } @else {
+    @if (canAdjust() && !target()) {
+      <div class="card">
+        <h2>Add stock for another product</h2>
+        <form class="search" (submit)="$event.preventDefault(); searchProducts()">
+          <label class="grow">
+            <span>Find a product</span>
+            <input type="search" autocomplete="off" placeholder="Name, SKU or barcode" [value]="productSearch()" (input)="productSearch.set(inputValue($event))" />
+          </label>
+          <button type="submit" class="secondary" [disabled]="searchingProducts()">Find</button>
+        </form>
+        @if (productSearchError()) {
+          <p class="field-error" role="alert">{{ productSearchError() }}</p>
+        }
+        @if (productResults().length > 0) {
+          <ul class="results">
+            @for (product of productResults(); track product.id) {
+              <li>
+                <div><span class="name">{{ product.name }}</span><span class="sub">{{ product.sku }}</span></div>
+                <button type="button" class="secondary" (click)="adjustProduct(product)">Adjust</button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+
+    <div class="toolbar">
+      <label class="grow">
+        <span class="sr-only">Search stock</span>
+        <input type="search" autocomplete="off" placeholder="Search by name or SKU" [value]="search()" (input)="search.set(inputValue($event))" />
+      </label>
+      <div class="filters" role="group" aria-label="Filter stock">
+        <button type="button" class="chip" [class.active]="filter() === 'all'" [attr.aria-pressed]="filter() === 'all'" (click)="filter.set('all')">All ({{ rows().length }})</button>
+        <button type="button" class="chip" [class.active]="filter() === 'attention'" [attr.aria-pressed]="filter() === 'attention'" (click)="filter.set('attention')">Out or below zero ({{ attentionCount() }})</button>
+      </div>
+    </div>
+    @if (negativeCount() > 0) {
+      <p class="notice notice-warn" role="status">{{ negativeCount() }} product(s) are below zero, usually because a manager sold more than was recorded. Count them and adjust.</p>
+    }
+
+    @if (visibleRows().length === 0) {
+      <div class="empty-state">
+        <h2>{{ rows().length === 0 ? 'No stock recorded yet' : 'Nothing matches' }}</h2>
+        <p>{{ rows().length === 0 ? 'Stock appears here after you receive goods or adjust a product.' : 'Try a different search or filter.' }}</p>
+      </div>
+    } @else {
+      <ul class="stock">
+        @for (row of visibleRows(); track row.balance.product) {
+          <li class="card row">
+            <div class="who">
+              <span class="name">{{ row.balance.product_name }}</span>
+              <span class="sub">{{ row.balance.product_sku }}</span>
+            </div>
+            <div class="qty" [class.negative]="row.status === 'negative'" [class.zero]="row.status === 'zero'">
+              <span class="amount">{{ quantity(row) }}</span>
+              @if (row.status === 'negative') { <span class="badge badge-warn">Below zero</span> }
+              @else if (row.status === 'zero') { <span class="badge">Out of stock</span> }
+            </div>
+            @if (canAdjust()) {
+              <button type="button" class="secondary" (click)="adjust(row)" [attr.aria-label]="'Adjust ' + row.balance.product_name">Adjust</button>
+            }
+          </li>
+        }
+      </ul>
+    }
+  }
+</section>
