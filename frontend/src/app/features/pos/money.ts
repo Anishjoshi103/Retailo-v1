@@ -19,6 +19,25 @@ export function parseMoney(value: string): number | null {
   return Number(rupees) * 100 + Number(fraction.padEnd(2, '0'));
 }
 
+const SIGNED_QUANTITY_PATTERN = /^[+-]?\d+(\.\d{1,3})?$/;
+
+/** Parse a quantity of zero or more (up to 3 decimals) into milli-units, or null if invalid. */
+export function parseQuantityOrZero(value: string): number | null {
+  const text = value.trim();
+  if (!QUANTITY_PATTERN.test(text)) return null;
+  const [whole, fraction = ''] = text.split('.');
+  return Number(whole) * 1000 + Number(fraction.padEnd(3, '0'));
+}
+
+/** Parse a signed quantity such as "-2.5" or "+4" into milli-units (zero allowed), or null if invalid. */
+export function parseSignedQuantity(value: string): number | null {
+  const text = value.trim();
+  if (!SIGNED_QUANTITY_PATTERN.test(text)) return null;
+  const negative = text.startsWith('-');
+  const magnitude = parseQuantityOrZero(text.replace(/^[+-]/, ''));
+  return magnitude === null ? null : negative ? -magnitude : magnitude;
+}
+
 /** Parse a positive quantity with up to 3 decimals into milli-units, or null if invalid. */
 export function parseQuantity(value: string): number | null {
   const text = value.trim();
@@ -38,6 +57,11 @@ export function formatMoney(paise: number): string {
 /** Format paise as rupees with the sign in front, e.g. 5 -> "₹0.05", -40 -> "-₹0.40". */
 export function formatRupees(paise: number): string {
   return `${paise < 0 ? '-' : ''}₹${formatMoney(Math.abs(paise))}`;
+}
+
+/** Format milli-units as a signed three-decimal quantity, e.g. -2500 -> "-2.500". */
+export function formatSignedQuantity(milli: number): string {
+  return `${milli < 0 ? '-' : ''}${formatQuantity(Math.abs(milli))}`;
 }
 
 /** Format milli-units as a three-decimal quantity string, e.g. 2000 -> "2.000". */

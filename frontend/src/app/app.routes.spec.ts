@@ -69,6 +69,15 @@ describe('application routes', () => {
     expect(route?.loadComponent).toBeDefined();
   });
 
+  it('serves the inventory screen to every role, and requires a branch', () => {
+    const shell = routes.find((route) => route.path === '');
+    const route = shell?.children?.find((child) => child.path === 'inventory');
+    expect(route?.canActivate).toContain(roleBranchGuard);
+    expect(route?.data?.['branchRequired']).toBe(true);
+    expect(route?.data?.['roles']).toEqual(['owner', 'admin', 'manager', 'cashier', 'accountant']);
+    expect(route?.loadComponent).toBeDefined();
+  });
+
   it('serves the billing screen at pos for selling roles only, and requires a branch', () => {
     const shell = routes.find((route) => route.path === '');
     const pos = shell?.children?.find((route) => route.path === 'pos');
