@@ -1,4 +1,5 @@
 import os
+import tempfile
 from datetime import timedelta
 from pathlib import Path
 
@@ -49,10 +50,36 @@ DATABASES = {
         "OPTIONS": {"driver": os.environ.get("DATABASE_DRIVER", "ODBC Driver 18 for SQL Server"), "extra_params": os.environ.get("DATABASE_EXTRA_PARAMS", "")},
     }
 }
+# Request limits for the endpoints attackers target (see docs/rate-limiting.md and apps/accounts/throttles.py).
+THROTTLE_RATES = {
+    "login_ip_email": "10/min",   # guessing one account's password from one address
+    "login_ip": "60/min",         # one address trying many accounts
+    "register_ip": "10/hour",     # each registration creates a store and sends an email
+    "reset_email": "3/hour",      # stops mailbox bombing through password reset
+    "reset_ip": "20/hour",
+    "token_ip": "30/hour",        # guessing email-verification and reset tokens
+    "staff_invite": "30/hour",    # per signed-in user; each invitation sends an email
+}
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework_simplejwt.authentication.JWTAuthentication"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "config.api_errors.api_exception_handler",
+    "DEFAULT_THROTTLE_RATES": THROTTLE_RATES,
+    # How many trusted reverse proxies (for example nginx) sit in front of the app. The client address is
+    # read from the right end of X-Forwarded-For, where a client cannot spoof it. 0 ignores the header.
+    "NUM_PROXIES": int(os.environ.get("TRUSTED_PROXY_COUNT", "0")),
+}
+# Rate-limit counters live in a cache that all gunicorn workers share (a per-process cache would let
+# each worker count separately). Files in one directory work for a single container; use a database or
+# Redis cache if the app is scaled across several containers.
+CACHES = {
+    "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
+    "throttle": {
+        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+        "LOCATION": os.environ.get("THROTTLE_CACHE_DIR", os.path.join(tempfile.gettempdir(), "retailo-throttle")),
+        # The default of 300 entries would cull counters at random once exceeded.
+        "OPTIONS": {"MAX_ENTRIES": 100000},
+    },
 }
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),

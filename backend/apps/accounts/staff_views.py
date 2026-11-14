@@ -22,6 +22,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied, ValidationErro
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.throttles import StaffInviteThrottle
 from apps.accounts.views import _frontend_url, _send_account_email
 from apps.tenancy.access import authorized_branches
 from apps.tenancy.models import BranchAccess, Membership
@@ -136,6 +137,10 @@ def _send_invite(member) -> bool:
 class StaffListCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_throttles(self):
+        # Only invitations send email; listing staff is not limited.
+        return [StaffInviteThrottle()] if self.request.method == "POST" else []
+
     def get(self, request):
         actor = require_membership_role(request, STAFF_MANAGERS, "Store administrator permissions are required to manage staff.")
         members = (
@@ -223,6 +228,7 @@ class StaffDetailView(APIView):
 
 class StaffResendInviteView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [StaffInviteThrottle]
 
     def post(self, request, membership_id):
         actor = require_membership_role(request, STAFF_MANAGERS, "Store administrator permissions are required to manage staff.")
