@@ -22,10 +22,11 @@ def serialize_sale(sale: Sale) -> dict:
     """Full invoice body shared by POST (create/replay) and GET (detail)."""
     tenant_id = sale.tenant_id
     lines = SaleLine.objects.for_tenant(tenant_id).filter(sale=sale).order_by("id")
+    # order_by(): the model's default ordering must not leak into a GROUP BY (SQL Server rejects it).
     returned = {
         row["sale_line_id"]: row["total"]
         for row in CreditNoteLine.objects.for_tenant(tenant_id)
-        .filter(sale_line__sale=sale).values("sale_line_id").annotate(total=Sum("quantity"))
+        .filter(sale_line__sale=sale).order_by().values("sale_line_id").annotate(total=Sum("quantity"))
     }
     payments = SalePayment.objects.for_tenant(tenant_id).filter(sale=sale).order_by("id")
     return {

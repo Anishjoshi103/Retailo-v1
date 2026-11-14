@@ -57,3 +57,40 @@ class SqlServerConstraintCompatibilityTests(SimpleTestCase):
         compiled = dict(self.constraint_sql())
         for name in ("inventory.StockMovement.uq_stock_move_tenant_idem", "inventory.Supplier.uq_supplier_tenant_gstin", "inventory.PurchaseInvoice.uq_purchase_invoice_supplier_number"):
             self.assertIn("> ''", compiled[name], name)
+
+
+class SqlServerQueryCompatibilityTests(SimpleTestCase):
+    """Grouped queries must not carry the model's default ordering into GROUP BY."""
+
+    def compiled(self, queryset):
+        connection = mssql_connection()
+        # The compiler asks the server for its version; give it one so no connection is needed.
+        connection.__dict__["sql_server_version"] = 2022
+        connection.__dict__["to_azure_sql_db"] = False
+        return queryset.query.get_compiler(connection=connection).as_sql()[0]
+
+    def test_returned_quantity_per_sale_line_query_has_no_order_by(self):
+        import uuid
+
+        from django.db.models import Sum
+
+        from apps.sales.models import CreditNoteLine
+
+        queryset = (
+            CreditNoteLine.objects.for_tenant(uuid.uuid4()).filter(sale_line__sale_id=uuid.uuid4())
+            .order_by().values("sale_line_id").annotate(total=Sum("quantity"))
+        )
+        sql = self.compiled(queryset)
+        self.assertIn("GROUP BY", sql)
+        self.assertNotIn("ORDER BY", sql)
+
+    def test_the_default_ordering_would_have_broken_it(self):
+        """Documents why order_by() is needed: without it SQL Server gets ORDER BY on an ungrouped column."""
+        import uuid
+
+        from django.db.models import Sum
+
+        from apps.sales.models import CreditNoteLine
+
+        queryset = CreditNoteLine.objects.for_tenant(uuid.uuid4()).values("sale_line_id").annotate(total=Sum("quantity"))
+        self.assertIn("ORDER BY", self.compiled(queryset))

@@ -12,7 +12,8 @@ import sys
 from pathlib import Path
 
 SEPARATOR = "=" * 70
-MAX_ENTRIES = 40
+MAX_ENTRIES = 8
+MAX_GROUPS = 7
 MAX_LINE = 400
 TAIL_LINES = 40
 
@@ -37,16 +38,27 @@ def parse_failures(log: str) -> list[tuple[str, str]]:
     return failures
 
 
+def _signature(detail: str) -> str:
+    """Normalise an error line so the same problem on different tests groups together."""
+    return re.sub(r"\d+|'[^']*'|\"[^\"]*\"", "#", detail)[:MAX_LINE]
+
+
 def summarize(log: str) -> list[str]:
     annotations = []
     failures = parse_failures(log)
+    groups: dict[str, list[tuple[str, str]]] = {}
+    for header, detail in failures:
+        groups.setdefault(_signature(detail), []).append((header, detail))
+    ordered = sorted(groups.values(), key=len, reverse=True)
     if failures:
-        shown = failures[:MAX_ENTRIES]
-        lines = [f"{len(failures)} failing test(s):"]
-        lines += [f"- {header[:MAX_LINE]} -> {detail[:MAX_LINE]}" for header, detail in shown]
-        if len(failures) > len(shown):
-            lines.append(f"... and {len(failures) - len(shown)} more")
-        annotations.append(f"::error title=Test failures::{_escape(chr(10).join(lines))}")
+        overview = f"{len(failures)} failing test(s) in {len(ordered)} distinct error group(s); largest group first."
+        annotations.append(f"::error title=Test failures::{_escape(overview)}")
+    for index, group in enumerate(ordered[:MAX_GROUPS], start=1):
+        lines = [f"{len(group)} test(s) with this error:", group[0][1][:MAX_LINE * 3], "Tests:"]
+        lines += [f"- {header[:MAX_LINE]}" for header, _ in group[:MAX_ENTRIES]]
+        if len(group) > MAX_ENTRIES:
+            lines.append(f"... and {len(group) - MAX_ENTRIES} more")
+        annotations.append(f"::error title=Error group {index}::{_escape(chr(10).join(lines))}")
     tail = "\n".join(log.strip().splitlines()[-TAIL_LINES:])
     if tail:
         annotations.append(f"::error title=End of test log::{_escape(tail[:8000])}")
