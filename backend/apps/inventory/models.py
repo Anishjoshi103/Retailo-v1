@@ -109,7 +109,8 @@ class StockMovement(TenantOwnedModel):
         ordering = ["-created_at", "-id"]
         constraints = [
             models.CheckConstraint(condition=~models.Q(quantity_delta=0), name="ck_stock_movement_nonzero"),
-            models.UniqueConstraint(fields=["tenant", "idempotency_key"], condition=~models.Q(idempotency_key=""), name="uq_stock_move_tenant_idem"),
+            # "Not empty" is written as > "" because SQL Server filtered indexes cannot use NOT.
+            models.UniqueConstraint(fields=["tenant", "idempotency_key"], condition=models.Q(idempotency_key__gt=""), name="uq_stock_move_tenant_idem"),
         ]
         indexes = [models.Index(fields=["tenant", "branch", "product", "created_at"], name="ix_stock_move_lookup")]
 
@@ -207,7 +208,7 @@ class Supplier(TenantOwnedModel):
         constraints = [
             models.UniqueConstraint(
                 fields=["tenant", "gstin"],
-                condition=~models.Q(gstin=""),
+                condition=models.Q(gstin__gt=""),
                 name="uq_supplier_tenant_gstin",
             ),
         ]
@@ -342,7 +343,7 @@ class PurchaseInvoice(TenantOwnedModel):
             models.UniqueConstraint(fields=["tenant", "idempotency_key"], name="uq_purchase_invoice_tenant_idem"),
             models.UniqueConstraint(
                 fields=["tenant", "supplier", "invoice_number"],
-                condition=~models.Q(invoice_number=""),
+                condition=models.Q(invoice_number__gt=""),
                 name="uq_purchase_invoice_supplier_number",
             ),
             models.CheckConstraint(

@@ -116,7 +116,7 @@ class SaleReturnView(APIView):
             row["sale_line_id"]: row["total"]
             for row in CreditNoteLine.objects.for_tenant(tenant_id)
             .filter(sale_line_id__in=[item["sale_line_id"] for item in requested])
-            .values("sale_line_id").annotate(total=Sum("quantity"))
+            .order_by().values("sale_line_id").annotate(total=Sum("quantity"))
         }
         items = []
         for item in requested:

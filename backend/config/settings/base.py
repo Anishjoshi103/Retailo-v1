@@ -8,6 +8,13 @@ DEBUG = False
 ALLOWED_HOSTS = [host.strip() for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if host.strip()]
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
+# simplejwt's token_blacklist migrations retype the primary-key columns (AutoField -> BigAutoField)
+# in a later migration, which SQL Server rejects ("object ... is dependent on column 'token_id'").
+# This app uses a single generated migration that creates the final schema directly instead.
+# Regenerate it if simplejwt changes its models:
+#   MIGRATION_MODULES points at an empty package, then `manage.py makemigrations token_blacklist`.
+MIGRATION_MODULES = {"token_blacklist": "apps.accounts.token_blacklist_migrations"}
+
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
