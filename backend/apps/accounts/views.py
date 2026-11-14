@@ -20,6 +20,14 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.accounts.throttles import (
+    LoginIpEmailThrottle,
+    LoginIpThrottle,
+    PasswordResetEmailThrottle,
+    PasswordResetIpThrottle,
+    RegisterIpThrottle,
+    TokenIpThrottle,
+)
 from apps.tenancy.access import authorized_branches
 from apps.tenancy.models import Branch, BranchAccess, Membership, Tenant
 from config.api_errors import api_error_response
@@ -72,6 +80,7 @@ def _send_account_email(*, subject, message, recipient):
 
 
 class RegisterView(APIView):
+    throttle_classes = [RegisterIpThrottle]
     permission_classes = [AllowAny]
     authentication_classes: list[type[BaseAuthentication]] = []
 
@@ -108,6 +117,7 @@ class RegisterView(APIView):
 
 
 class VerifyEmailView(APIView):
+    throttle_classes = [TokenIpThrottle]
     permission_classes = [AllowAny]
     authentication_classes: list[type[BaseAuthentication]] = []
 
@@ -124,6 +134,7 @@ class VerifyEmailView(APIView):
 
 
 class PasswordResetRequestView(APIView):
+    throttle_classes = [PasswordResetIpThrottle, PasswordResetEmailThrottle]
     permission_classes = [AllowAny]
     authentication_classes: list[type[BaseAuthentication]] = []
 
@@ -146,6 +157,7 @@ class PasswordResetRequestView(APIView):
 
 
 class PasswordResetConfirmView(APIView):
+    throttle_classes = [TokenIpThrottle]
     permission_classes = [AllowAny]
     authentication_classes: list[type[BaseAuthentication]] = []
 
@@ -168,6 +180,7 @@ class PasswordResetConfirmView(APIView):
 
 
 class LoginView(APIView):
+    throttle_classes = [LoginIpThrottle, LoginIpEmailThrottle]
     permission_classes = [AllowAny]
     authentication_classes: list[type[BaseAuthentication]] = []
 

@@ -24,6 +24,9 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.local
       DATABASE_HOST: db
+      # nginx is the one trusted proxy in front of the app; rate limits read the client address from
+      # the right end of X-Forwarded-For. Without this every user would look like nginx's address.
+      TRUSTED_PROXY_COUNT: "1"
     depends_on:
       db:
         condition: service_healthy
