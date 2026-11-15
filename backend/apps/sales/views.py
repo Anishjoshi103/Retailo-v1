@@ -16,13 +16,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.inventory.models import InventoryBalance, StockMovement
-from apps.sales.listing import filter_documents, page_bounds
 from apps.sales.models import Sale, SaleLine, SalePayment
 from apps.sales.numbering import InvoiceNumberError, allocate_invoice_number
 from apps.sales.presenters import serialize_sale, serialize_sale_summary
 from apps.sales.pricing import price_sale
 from apps.sales.serializers import SaleInputSerializer
 from apps.tenancy.access import authorized_branches
+from apps.tenancy.listing import filter_documents, page_bounds
 from apps.tenancy.permissions import active_tenant_membership, require_membership_role
 
 SELLING_ROLES = {"owner", "admin", "manager", "cashier"}

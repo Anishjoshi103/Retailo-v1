@@ -1,5 +1,6 @@
 from django.db import IntegrityError, transaction
 from rest_framework import generics, permissions, serializers
+from rest_framework.exceptions import NotFound
 
 from apps.tenancy.permissions import active_tenant_membership, require_membership_role
 
@@ -48,3 +49,39 @@ class SupplierListCreateView(generics.ListCreateAPIView):
                     {"gstin": "A supplier with this GSTIN already exists in this store."}
                 ) from exc
             raise
+
+
+class SupplierDetailView(generics.RetrieveUpdateAPIView):
+    """Read or edit one supplier. Receipts keep their own supplier-name snapshot, so edits never rewrite history.
+
+    Deactivating (``is_active: false``) hides the supplier from new deliveries; it is never deleted.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SupplierSerializer
+    http_method_names = ["get", "patch", "head", "options"]
+
+    def get_object(self):
+        tenant_id = active_tenant_membership(self.request).tenant_id
+        supplier = Supplier.objects.for_tenant(tenant_id).filter(pk=self.kwargs["supplier_id"]).first()
+        if supplier is None:
+            raise NotFound("Supplier not found.")
+        return supplier
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["tenant_id"] = active_tenant_membership(self.request).tenant_id
+        return context
+
+    def perform_update(self, serializer):
+        require_membership_role(
+            self.request, {"owner", "admin", "manager"},
+            "Store manager permissions are required to change suppliers.",
+        )
+        try:
+            with transaction.atomic():
+                serializer.save()
+        except IntegrityError as exc:
+            raise serializers.ValidationError(
+                {"gstin": "A supplier with this GSTIN already exists in this store."}
+            ) from exc

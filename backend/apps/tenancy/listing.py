@@ -1,4 +1,4 @@
-"""Shared filtering and paging for the sales and credit note list endpoints."""
+"""Shared filtering and paging for list endpoints (sales, credit notes, purchase receipts)."""
 
 import uuid
 from datetime import date
