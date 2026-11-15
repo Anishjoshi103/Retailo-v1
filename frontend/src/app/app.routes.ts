@@ -18,6 +18,8 @@ export const routes: Routes = [
     { path: 'settings', canActivate: [roleBranchGuard], data: { title: 'Settings', roles: ['owner', 'admin'] }, loadComponent: () => import('./features/settings/settings.page').then((m) => m.SettingsPage) },
     { path: 'settings/staff', canActivate: [roleBranchGuard], data: { title: 'Staff', roles: ['owner', 'admin'] }, loadComponent: () => import('./features/staff/staff.page').then((m) => m.StaffPage) },
     { path: 'inventory', canActivate: [roleBranchGuard], data: { title: 'Inventory', branchRequired: true, roles: allRoles }, loadComponent: () => import('./features/inventory/inventory.page').then((m) => m.InventoryPage) },
+    { path: 'purchases', canActivate: [roleBranchGuard], data: { title: 'Receive goods', branchRequired: true, roles: ['owner', 'admin', 'manager'] }, loadComponent: () => import('./features/purchases/receive-goods.page').then((m) => m.ReceiveGoodsPage) },
+    { path: 'purchases/suppliers', canActivate: [roleBranchGuard], data: { title: 'Suppliers', roles: ['owner', 'admin', 'manager'] }, loadComponent: () => import('./features/purchases/suppliers.page').then((m) => m.SuppliersPage) },
     ...featurePaths.map((path) => ({ path, canActivate: [roleBranchGuard], data: { title: featureTitle(path), ...(path === 'reports' ? { roles: ['owner', 'admin', 'manager'] } : {}), }, loadComponent: () => import('./features/placeholder/feature-placeholder.page').then((m) => m.FeaturePlaceholderPage) }))
   ] },
   { path: '**', redirectTo: '' }
