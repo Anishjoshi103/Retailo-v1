@@ -1,0 +1,100 @@
+<section class="page" aria-labelledby="suppliers-title">
+  <nav class="tabs" aria-label="Purchases sections">
+    <a routerLink="/purchases">Receive goods</a>
+    <a routerLink="/purchases/suppliers" aria-current="page">Suppliers</a>
+  </nav>
+
+  <header class="page-header">
+    <p class="eyebrow">PURCHASES</p>
+    <h1 id="suppliers-title">Suppliers</h1>
+    <p class="intro">The people and companies you buy from. Choose one when you receive goods.</p>
+  </header>
+
+  @if (notice()) {
+    <p class="notice notice-ok" role="status">{{ notice() }}</p>
+  }
+
+  @if (canCreate()) {
+    @if (formOpen()) {
+      <div class="card" role="group" aria-labelledby="add-title">
+        <div class="card-head">
+          <h2 id="add-title">Add a supplier</h2>
+          <button type="button" class="text-button" (click)="closeForm()">Cancel</button>
+        </div>
+        <div class="fields">
+          <label>
+            <span>Name</span>
+            <input type="text" maxlength="180" [class.invalid]="fieldError('name') !== ''" [value]="name()" (input)="name.set(inputValue($event))" />
+            @if (fieldError('name')) { <span class="field-error" role="alert">{{ fieldError('name') }}</span> }
+          </label>
+          <label>
+            <span>GSTIN (optional)</span>
+            <input type="text" maxlength="15" autocomplete="off" placeholder="27AAPFU0939F1ZV"
+              [class.invalid]="gstinError() !== '' || fieldError('gstin') !== ''" [value]="gstin()" (input)="gstin.set(inputValue($event))" />
+            @if (gstinError() || fieldError('gstin')) { <span class="field-error" role="alert">{{ gstinError() || fieldError('gstin') }}</span> }
+          </label>
+          <label>
+            <span>Phone (optional)</span>
+            <input type="tel" inputmode="tel" maxlength="32" [value]="phone()" (input)="phone.set(inputValue($event))" />
+            @if (fieldError('phone')) { <span class="field-error" role="alert">{{ fieldError('phone') }}</span> }
+          </label>
+          <label>
+            <span>Email (optional)</span>
+            <input type="email" inputmode="email" maxlength="254" [class.invalid]="emailError() !== '' || fieldError('email') !== ''" [value]="email()" (input)="email.set(inputValue($event))" />
+            @if (emailError() || fieldError('email')) { <span class="field-error" role="alert">{{ emailError() || fieldError('email') }}</span> }
+          </label>
+          <label class="wide">
+            <span>Address (optional)</span>
+            <input type="text" maxlength="500" [value]="address()" (input)="address.set(inputValue($event))" />
+            @if (fieldError('address')) { <span class="field-error" role="alert">{{ fieldError('address') }}</span> }
+          </label>
+        </div>
+        @if (saveError()) {
+          <p class="field-error" role="alert">{{ saveError() }}</p>
+        }
+        <button type="button" class="primary" [disabled]="!canSave()" (click)="save()">{{ saving() ? 'Saving…' : 'Add supplier' }}</button>
+      </div>
+    } @else {
+      <button type="button" class="primary add" (click)="openForm()">Add a supplier</button>
+    }
+  }
+
+  <form class="toolbar" (submit)="$event.preventDefault(); load()">
+    <label class="grow">
+      <span class="sr-only">Search suppliers</span>
+      <input type="search" autocomplete="off" placeholder="Search by name, GSTIN or phone" [value]="search()" (input)="search.set(inputValue($event))" />
+    </label>
+    <button type="submit" class="secondary">Search</button>
+    <div class="filters" role="group" aria-label="Filter suppliers">
+      <button type="button" class="chip" [class.active]="filter() === 'all'" [attr.aria-pressed]="filter() === 'all'" (click)="setFilter('all')">All</button>
+      <button type="button" class="chip" [class.active]="filter() === 'active'" [attr.aria-pressed]="filter() === 'active'" (click)="setFilter('active')">Active</button>
+    </div>
+  </form>
+
+  @if (loading()) {
+    <p class="notice" role="status">Loading suppliers…</p>
+  } @else if (loadError()) {
+    <div class="notice notice-error" role="alert">
+      <span>{{ loadError() }}</span>
+      <button type="button" class="text-button" (click)="load()">Try again</button>
+    </div>
+  } @else if (suppliers().length === 0) {
+    <div class="empty-state">
+      <h2>No suppliers found</h2>
+      <p>Add the people and companies you buy from, then choose them when you receive goods.</p>
+    </div>
+  } @else {
+    <ul class="list">
+      @for (supplier of suppliers(); track supplier.id) {
+        <li class="card item">
+          <div class="who">
+            <span class="name">{{ supplier.name }}</span>
+            <span class="sub">{{ supplier.gstin || 'No GSTIN' }}@if (supplier.phone) { · {{ supplier.phone }} }@if (supplier.email) { · {{ supplier.email }} }</span>
+            @if (supplier.address) { <span class="sub">{{ supplier.address }}</span> }
+          </div>
+          @if (!supplier.is_active) { <span class="badge">Inactive</span> }
+        </li>
+      }
+    </ul>
+  }
+</section>

@@ -8,7 +8,7 @@ export class SidenavComponent {
   private readonly access = inject(SessionContextService);
   readonly items: readonly NavigationItem[] = [
     {label:'Dashboard',route:'/',icon:'⌂'},{label:'Point of sale',route:'/pos',icon:'▣'},{label:'Catalog',route:'/catalog',icon:'▤'},
-    {label:'Inventory',route:'/inventory',icon:'▥'},{label:'GST & invoices',route:'/gst',icon:'₹'},
+    {label:'Inventory',route:'/inventory',icon:'▥'},{label:'Purchases',route:'/purchases',icon:'⇩',roles:['owner','admin','manager']},{label:'GST & invoices',route:'/gst',icon:'₹'},
     {label:'Reports',route:'/reports',icon:'▥',roles:['owner','admin','manager']},{label:'Settings',route:'/settings',icon:'⚙',roles:['owner','admin']}
   ];
   visibleItems(): readonly NavigationItem[] { const roles=this.access.roles(); return this.items.filter((item)=>!item.roles||item.roles.some((role)=>roles.includes(role))); }

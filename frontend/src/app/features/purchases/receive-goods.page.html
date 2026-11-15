@@ -1,0 +1,124 @@
+<section class="page" aria-labelledby="receive-title">
+  <nav class="tabs" aria-label="Purchases sections">
+    <a routerLink="/purchases" aria-current="page">Receive goods</a>
+    <a routerLink="/purchases/suppliers">Suppliers</a>
+  </nav>
+
+  <header class="page-header">
+    <p class="eyebrow">PURCHASES</p>
+    <h1 id="receive-title">Receive goods</h1>
+    <p class="intro">Record a delivery. The quantities are added to this branch's stock straight away.</p>
+  </header>
+
+  @if (completed(); as done) {
+    <div class="card receipt" role="status">
+      <h2>Goods received</h2>
+      <p class="sub">From {{ done.receipt.supplier_name }}@if (done.receipt.supplier_invoice_number) { · invoice {{ done.receipt.supplier_invoice_number }} }</p>
+      @if (done.receipt.replayed) {
+        <p class="sub">This delivery had already been recorded; nothing was added twice.</p>
+      }
+      <ul class="received">
+        @for (line of done.receipt.lines; track line.product_id) {
+          <li>{{ line.quantity }} at ₹{{ line.unit_cost }}</li>
+        }
+      </ul>
+      <p class="total"><span>{{ done.receipt.lines.length }} item(s)</span><strong>{{ rupees(done.totalPaise) }}</strong></p>
+      <div class="actions">
+        <button type="button" class="primary" (click)="receiveMore()">Receive more goods</button>
+        <a class="link" routerLink="/inventory">View stock</a>
+      </div>
+    </div>
+  } @else {
+    <div class="card">
+      <h2>Supplier</h2>
+      <div class="fields">
+        <label>
+          <span>Saved supplier</span>
+          <select [value]="supplierId()" (change)="chooseSupplier(inputValue($event))">
+            <option value="" [selected]="supplierId() === ''">Not saved: type a name</option>
+            @for (supplier of suppliers(); track supplier.id) {
+              <option [value]="supplier.id" [selected]="supplier.id === supplierId()">{{ supplier.name }}</option>
+            }
+          </select>
+        </label>
+        @if (supplierId() === '') {
+          <label>
+            <span>Supplier name</span>
+            <input type="text" [attr.maxlength]="maxSupplierName" [value]="supplierName()" (input)="supplierName.set(inputValue($event))" />
+          </label>
+        }
+        <label>
+          <span>Supplier invoice number (optional)</span>
+          <input type="text" [attr.maxlength]="maxInvoiceNumber" [value]="invoiceNumber()" (input)="invoiceNumber.set(inputValue($event))" />
+        </label>
+      </div>
+      @if (suppliersFailed()) {
+        <p class="hint">Saved suppliers could not be loaded; you can still type a name. <a class="link" routerLink="/purchases/suppliers">Manage suppliers</a></p>
+      } @else if (suppliers().length === 0) {
+        <p class="hint">No saved suppliers yet. <a class="link" routerLink="/purchases/suppliers">Add one</a> to pick it next time.</p>
+      }
+    </div>
+
+    <div class="card">
+      <h2>Items received</h2>
+      <form class="search" (submit)="$event.preventDefault(); searchProducts()">
+        <label class="grow">
+          <span>Scan or search a product</span>
+          <input type="search" autocomplete="off" placeholder="Barcode, SKU or name" [value]="search()" (input)="search.set(inputValue($event))" />
+        </label>
+        <button type="submit" class="secondary" [disabled]="searching()">Find</button>
+      </form>
+      @if (searchError()) {
+        <p class="field-error" role="alert">{{ searchError() }}</p>
+      }
+      @if (results().length > 0) {
+        <ul class="results">
+          @for (product of results(); track product.id) {
+            <li>
+              <div><span class="name">{{ product.name }}</span><span class="sub">{{ product.sku }}</span></div>
+              <button type="button" class="secondary" (click)="addProduct(product)">Add</button>
+            </li>
+          }
+        </ul>
+      }
+
+      @if (lines().length === 0) {
+        <p class="hint">No items yet. Scan or search to add what arrived.</p>
+      } @else {
+        <ul class="lines">
+          @for (priced of pricedLines(); track priced.line.product.id) {
+            <li>
+              <div class="item">
+                <span class="name">{{ priced.line.product.name }}</span>
+                <span class="sub">{{ priced.line.product.sku }} · per {{ priced.line.product.unit }}</span>
+              </div>
+              <label class="qty">
+                <span class="sr-only">Quantity of {{ priced.line.product.name }}</span>
+                <input type="text" inputmode="decimal" placeholder="Qty" [class.invalid]="priced.quantityMilli === null" [attr.aria-invalid]="priced.quantityMilli === null"
+                  [value]="priced.line.quantityText" (input)="setQuantity(priced.line.product.id, inputValue($event))" />
+              </label>
+              <label class="cost">
+                <span class="sr-only">Cost per unit of {{ priced.line.product.name }}</span>
+                <input type="text" inputmode="decimal" placeholder="Cost each" [class.invalid]="priced.costPaise === null" [attr.aria-invalid]="priced.costPaise === null"
+                  [value]="priced.line.costText" (input)="setCost(priced.line.product.id, inputValue($event))" />
+              </label>
+              <span class="line-total">{{ lineTotal(priced.grossPaise) }}</span>
+              <button type="button" class="text-button" (click)="removeLine(priced.line.product.id)" [attr.aria-label]="'Remove ' + priced.line.product.name">Remove</button>
+            </li>
+          }
+        </ul>
+        @if (!linesValid()) {
+          <p class="field-error" role="alert">Enter a quantity above zero (up to 3 decimals) and a cost of zero or more (up to 2 decimals) for every item.</p>
+        }
+      }
+    </div>
+
+    <div class="card summary">
+      <p class="total"><span>Total cost</span><strong>{{ rupees(totalPaise()) }}</strong></p>
+      @if (submitError()) {
+        <p class="field-error" role="alert">{{ submitError() }}</p>
+      }
+      <button type="button" class="primary" [disabled]="!canSubmit()" (click)="submit()">{{ submitting() ? 'Saving…' : 'Receive goods' }}</button>
+    </div>
+  }
+</section>

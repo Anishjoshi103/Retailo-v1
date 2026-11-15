@@ -78,6 +78,18 @@ describe('application routes', () => {
     expect(route?.loadComponent).toBeDefined();
   });
 
+  it('serves receive goods and suppliers to managers, admins and owners only', () => {
+    const shell = routes.find((route) => route.path === '');
+    for (const path of ['purchases', 'purchases/suppliers']) {
+      const route = shell?.children?.find((child) => child.path === path);
+      expect(route?.canActivate, path).toContain(roleBranchGuard);
+      expect(route?.data?.['roles'], path).toEqual(['owner', 'admin', 'manager']);
+      expect(route?.loadComponent, path).toBeDefined();
+    }
+    const receive = shell?.children?.find((child) => child.path === 'purchases');
+    expect(receive?.data?.['branchRequired']).toBe(true);
+  });
+
   it('serves the billing screen at pos for selling roles only, and requires a branch', () => {
     const shell = routes.find((route) => route.path === '');
     const pos = shell?.children?.find((route) => route.path === 'pos');
