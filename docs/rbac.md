@@ -20,7 +20,11 @@ This matrix describes the API routes currently registered in `config/urls.py` an
 | `POST /api/v1/inventory/adjustments` | Allow | Allow | Allow | Deny | Deny | Active tenant and active branch grant |
 | `GET /api/v1/inventory/suppliers` | Read | Read | Read | Read | Read | Active tenant |
 | `POST /api/v1/inventory/suppliers` | Allow | Allow | Allow | Deny | Deny | Active tenant |
+| `GET /api/v1/inventory/suppliers/{id}` | Read | Read | Read | Read | Read | Active tenant; other stores' suppliers return 404 |
+| `PATCH /api/v1/inventory/suppliers/{id}` | Allow | Allow | Allow | Deny | Deny | Active tenant. Deactivating hides the supplier from new deliveries; nothing is deleted |
 | `POST /api/v1/inventory/receipts` | Allow | Allow | Allow | Deny | Deny | Active tenant and active branch grant |
+| `GET /api/v1/inventory/receipts` | Read | Read | Read | Deny | Read | Cost data. Only receipts of branches granted to the membership; `branch_id` outside the grants returns 403 |
+| `GET /api/v1/inventory/receipts/{id}` | Read | Read | Read | Deny | Read | Active tenant and active branch grant; others receive 404 |
 | `POST /api/v1/inventory/returns` | Allow | Allow | Allow | Deny | Deny | Active tenant and receipt's active branch grant |
 | `POST /api/v1/sales` | Allow | Allow | Allow | Allow | Deny | Active tenant and active branch grant. `allow_negative_stock` (sell below on-hand stock) additionally requires owner, admin or manager; cashiers receive 403 |
 | `GET /api/v1/sales` | Read | Read | Read | Read | Read | Only sales of branches granted to the membership; `branch_id` outside the grants returns 403 |

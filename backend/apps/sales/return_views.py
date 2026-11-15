@@ -11,13 +11,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.inventory.models import InventoryBalance, StockMovement
-from apps.sales.listing import filter_documents, page_bounds, uuid_param
 from apps.sales.models import CreditNote, CreditNoteLine, Sale, SaleLine
 from apps.sales.numbering import InvoiceNumberError, allocate_credit_note_number
 from apps.sales.presenters import serialize_credit_note, serialize_credit_note_summary
 from apps.sales.returns import price_return
 from apps.sales.serializers import ReturnInputSerializer
 from apps.tenancy.access import authorized_branches
+from apps.tenancy.listing import filter_documents, page_bounds, uuid_param
 from apps.tenancy.permissions import active_tenant_membership, require_membership_role
 
 RETURNING_ROLES = {"owner", "admin", "manager", "cashier"}

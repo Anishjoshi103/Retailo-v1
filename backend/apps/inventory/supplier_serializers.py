@@ -21,6 +21,9 @@ class SupplierSerializer(serializers.ModelSerializer):
         value = value.strip().upper()
         if value and not re.fullmatch(r"[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]", value):
             raise serializers.ValidationError("Enter a GSTIN in the expected 15-character format.")
-        if value and Supplier.objects.for_tenant(self.context["tenant_id"]).filter(gstin=value).exists():
+        others = Supplier.objects.for_tenant(self.context["tenant_id"]).filter(gstin=value)
+        if self.instance is not None:
+            others = others.exclude(pk=self.instance.pk)  # editing a supplier must not collide with itself
+        if value and others.exists():
             raise serializers.ValidationError("A supplier with this GSTIN already exists in this store.")
         return value
