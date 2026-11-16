@@ -90,6 +90,17 @@ describe('application routes', () => {
     expect(receive?.data?.['branchRequired']).toBe(true);
   });
 
+  it('serves the deliveries history to managers, admins, owners and accountants, with a branch', () => {
+    const shell = routes.find((route) => route.path === '');
+    for (const path of ['purchases/history', 'purchases/history/:id']) {
+      const route = shell?.children?.find((child) => child.path === path);
+      expect(route?.canActivate, path).toContain(roleBranchGuard);
+      expect(route?.data?.['branchRequired'], path).toBe(true);
+      expect(route?.data?.['roles'], path).toEqual(['owner', 'admin', 'manager', 'accountant']);
+      expect(route?.loadComponent, path).toBeDefined();
+    }
+  });
+
   it('serves the billing screen at pos for selling roles only, and requires a branch', () => {
     const shell = routes.find((route) => route.path === '');
     const pos = shell?.children?.find((route) => route.path === 'pos');

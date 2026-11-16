@@ -51,4 +51,37 @@ describe('PurchasesApi', () => {
     expect(request.request.body).toEqual(body);
     request.flush({});
   });
+
+  it('updates a supplier with PATCH', () => {
+    api.updateSupplier('s-1', { is_active: false }).subscribe();
+    const request = http.expectOne('/api/v1/inventory/suppliers/s-1');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ is_active: false });
+    request.flush({});
+  });
+
+  it('lists past deliveries sending only the filters provided', () => {
+    api.receipts({ branchId: 'b-1', supplierId: 's-1', invoiceNumber: 'AF-1', dateFrom: '2026-11-01', limit: 20, offset: 40 }).subscribe();
+    const request = http.expectOne((req) => req.url === '/api/v1/inventory/receipts');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.get('branch_id')).toBe('b-1');
+    expect(request.request.params.get('supplier_id')).toBe('s-1');
+    expect(request.request.params.get('invoice_number')).toBe('AF-1');
+    expect(request.request.params.get('date_from')).toBe('2026-11-01');
+    expect(request.request.params.has('date_to')).toBe(false);
+    expect(request.request.params.get('limit')).toBe('20');
+    expect(request.request.params.get('offset')).toBe('40');
+    request.flush([]);
+  });
+
+  it('lists with no filters and fetches one delivery by id', () => {
+    api.receipts().subscribe();
+    const list = http.expectOne((req) => req.url === '/api/v1/inventory/receipts');
+    expect(list.request.params.keys()).toEqual([]);
+    list.flush([]);
+    api.receipt('r-1').subscribe();
+    const one = http.expectOne('/api/v1/inventory/receipts/r-1');
+    expect(one.request.method).toBe('GET');
+    one.flush({});
+  });
 });

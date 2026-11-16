@@ -1,0 +1,78 @@
+<section class="page" aria-labelledby="deliveries-title">
+  <nav class="tabs" aria-label="Purchases sections">
+    <a routerLink="/purchases">Receive goods</a>
+    <a routerLink="/purchases/history" aria-current="page">Deliveries</a>
+    <a routerLink="/purchases/suppliers">Suppliers</a>
+  </nav>
+
+  <header class="page-header">
+    <p class="eyebrow">PURCHASES</p>
+    <h1 id="deliveries-title">Deliveries</h1>
+    <p class="intro">Goods received into this branch, newest first.</p>
+  </header>
+
+  <form class="filters" (submit)="$event.preventDefault(); reload()">
+    <label class="grow">
+      <span>Supplier invoice number</span>
+      <input type="search" autocomplete="off" placeholder="e.g. AF-1001" [value]="invoiceNumber()" (input)="invoiceNumber.set(inputValue($event))" />
+    </label>
+    <label>
+      <span>From</span>
+      <input type="date" [value]="dateFrom()" (input)="dateFrom.set(inputValue($event))" />
+    </label>
+    <label>
+      <span>To</span>
+      <input type="date" [value]="dateTo()" (input)="dateTo.set(inputValue($event))" />
+    </label>
+    <button type="submit" class="primary" [disabled]="dateRangeInvalid">Search</button>
+    <button type="button" class="text-button" (click)="clearFilters()">Clear</button>
+  </form>
+  @if (dateRangeInvalid) {
+    <p class="notice notice-error" role="alert">The From date is after the To date.</p>
+  }
+
+  @if (errorMessage()) {
+    <div class="notice notice-error" role="alert">
+      <span>{{ errorMessage() }}</span>
+      <button type="button" class="text-button" (click)="reload()">Try again</button>
+    </div>
+  }
+
+  <div class="table-wrap" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <div class="notice" role="status">Loading deliveries…</div>
+    } @else if (!errorMessage() && deliveries().length === 0) {
+      <div class="empty-state">
+        <h2>No deliveries found</h2>
+        <p>Goods you receive appear here. Try another invoice number or date range.</p>
+      </div>
+    } @else if (deliveries().length > 0) {
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Supplier</th>
+            <th scope="col">Invoice</th>
+            <th scope="col" class="numeric">Items</th>
+            <th scope="col" class="numeric">Total cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (delivery of deliveries(); track delivery.id) {
+            <tr>
+              <td><a class="row-link" [routerLink]="['/purchases/history', delivery.id]">{{ day(delivery.received_at) }}</a></td>
+              <td>{{ delivery.supplier_name }}</td>
+              <td>{{ delivery.supplier_invoice_number || '—' }}</td>
+              <td class="numeric">{{ delivery.line_count }}</td>
+              <td class="numeric price">₹{{ delivery.total_cost }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  @if (hasMore()) {
+    <button type="button" class="secondary load-more" [disabled]="loadingMore()" (click)="loadMore()">{{ loadingMore() ? 'Loading…' : 'Load more' }}</button>
+  }
+</section>
