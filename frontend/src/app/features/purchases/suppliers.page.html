@@ -1,6 +1,7 @@
 <section class="page" aria-labelledby="suppliers-title">
   <nav class="tabs" aria-label="Purchases sections">
     <a routerLink="/purchases">Receive goods</a>
+    <a routerLink="/purchases/history">Deliveries</a>
     <a routerLink="/purchases/suppliers" aria-current="page">Suppliers</a>
   </nav>
 
@@ -87,12 +88,75 @@
     <ul class="list">
       @for (supplier of suppliers(); track supplier.id) {
         <li class="card item">
-          <div class="who">
-            <span class="name">{{ supplier.name }}</span>
-            <span class="sub">{{ supplier.gstin || 'No GSTIN' }}@if (supplier.phone) { · {{ supplier.phone }} }@if (supplier.email) { · {{ supplier.email }} }</span>
-            @if (supplier.address) { <span class="sub">{{ supplier.address }}</span> }
+          <div class="item-head">
+            <div class="who">
+              <span class="name">{{ supplier.name }}</span>
+              <span class="sub">{{ supplier.gstin || 'No GSTIN' }}@if (supplier.phone) { · {{ supplier.phone }} }@if (supplier.email) { · {{ supplier.email }} }</span>
+              @if (supplier.address) { <span class="sub">{{ supplier.address }}</span> }
+            </div>
+            @if (!supplier.is_active) { <span class="badge">Inactive</span> }
           </div>
-          @if (!supplier.is_active) { <span class="badge">Inactive</span> }
+
+          @if (canCreate()) {
+            @if (editingId() === supplier.id) {
+              <div class="edit">
+                <div class="fields">
+                  <label>
+                    <span>Name</span>
+                    <input type="text" maxlength="180" [class.invalid]="editFieldError('name') !== ''" [value]="editName()" (input)="editName.set(inputValue($event))" />
+                    @if (editFieldError('name')) { <span class="field-error" role="alert">{{ editFieldError('name') }}</span> }
+                  </label>
+                  <label>
+                    <span>GSTIN</span>
+                    <input type="text" maxlength="15" autocomplete="off" [class.invalid]="editGstinError() !== '' || editFieldError('gstin') !== ''" [value]="editGstin()" (input)="editGstin.set(inputValue($event))" />
+                    @if (editGstinError() || editFieldError('gstin')) { <span class="field-error" role="alert">{{ editGstinError() || editFieldError('gstin') }}</span> }
+                  </label>
+                  <label>
+                    <span>Phone</span>
+                    <input type="tel" inputmode="tel" maxlength="32" [value]="editPhone()" (input)="editPhone.set(inputValue($event))" />
+                    @if (editFieldError('phone')) { <span class="field-error" role="alert">{{ editFieldError('phone') }}</span> }
+                  </label>
+                  <label>
+                    <span>Email</span>
+                    <input type="email" inputmode="email" maxlength="254" [class.invalid]="editEmailError() !== '' || editFieldError('email') !== ''" [value]="editEmail()" (input)="editEmail.set(inputValue($event))" />
+                    @if (editEmailError() || editFieldError('email')) { <span class="field-error" role="alert">{{ editEmailError() || editFieldError('email') }}</span> }
+                  </label>
+                  <label class="wide">
+                    <span>Address</span>
+                    <input type="text" maxlength="500" [value]="editAddress()" (input)="editAddress.set(inputValue($event))" />
+                    @if (editFieldError('address')) { <span class="field-error" role="alert">{{ editFieldError('address') }}</span> }
+                  </label>
+                </div>
+                <div class="actions">
+                  <button type="button" class="primary" [disabled]="!canSaveEdit(supplier)" (click)="saveEdit(supplier)">{{ busyId() === supplier.id ? 'Saving…' : 'Save changes' }}</button>
+                  <button type="button" class="text-button" (click)="cancelEdit()">Cancel</button>
+                </div>
+              </div>
+            } @else if (confirmingId() === supplier.id) {
+              <div class="confirm" role="alertdialog" [attr.aria-label]="'Deactivate ' + supplier.name">
+                <p>Deactivate {{ supplier.name }}? It will no longer appear when you receive goods. Past deliveries keep its name, and you can reactivate it any time.</p>
+                <div class="actions">
+                  <button type="button" class="danger" [disabled]="busyId() !== null" (click)="deactivate(supplier)">Deactivate</button>
+                  <button type="button" class="text-button" (click)="cancelDeactivate()">Cancel</button>
+                </div>
+              </div>
+            } @else {
+              <div class="actions">
+                <button type="button" class="secondary" (click)="startEdit(supplier)">Edit</button>
+                @if (supplier.is_active) {
+                  <button type="button" class="text-button" (click)="askDeactivate(supplier)">Deactivate</button>
+                } @else {
+                  <button type="button" class="text-button" [disabled]="busyId() !== null" (click)="reactivate(supplier)">Reactivate</button>
+                }
+              </div>
+            }
+          }
+
+          @if (rowMessage(); as row) {
+            @if (row.id === supplier.id) {
+              <p class="row-message" [class.row-error]="row.kind === 'error'" [attr.role]="row.kind === 'error' ? 'alert' : 'status'">{{ row.text }}</p>
+            }
+          }
         </li>
       }
     </ul>

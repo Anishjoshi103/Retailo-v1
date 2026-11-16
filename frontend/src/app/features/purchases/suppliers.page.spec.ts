@@ -17,7 +17,7 @@ function supplier(overrides: Partial<Supplier> = {}): Supplier {
 describe('SuppliersPage', () => {
   let fixture: ComponentFixture<SuppliersPage>;
   let page: SuppliersPage;
-  let api: { suppliers: ReturnType<typeof vi.fn>; createSupplier: ReturnType<typeof vi.fn> };
+  let api: { suppliers: ReturnType<typeof vi.fn>; createSupplier: ReturnType<typeof vi.fn>; updateSupplier?: ReturnType<typeof vi.fn> };
   let roles: ReturnType<typeof signal<readonly string[]>>;
 
   const element = (): HTMLElement => fixture.nativeElement as HTMLElement;
@@ -50,7 +50,7 @@ describe('SuppliersPage', () => {
     expect(text()).toContain('No GSTIN');
     expect(text()).toContain('Inactive');
     const hrefs = Array.from(element().querySelectorAll('nav.tabs a')).map((a) => a.getAttribute('href'));
-    expect(hrefs).toEqual(['/purchases', '/purchases/suppliers']);
+    expect(hrefs).toEqual(['/purchases', '/purchases/history', '/purchases/suppliers']);
   });
 
   it('searches and filters to active suppliers through the API', () => {
@@ -155,5 +155,98 @@ describe('SuppliersPage', () => {
     page.saving.set(true);
     page.save();
     expect(api.createSupplier).not.toHaveBeenCalled();
+  });
+
+  it('edits a supplier, sending only the fields that changed', () => {
+    api.updateSupplier = vi.fn().mockImplementation((id: string, body: Partial<Supplier>) => of({ ...supplier({ id }), ...body }));
+    create();
+    const target = page.suppliers()[0];
+    page.startEdit(target);
+    expect(page.editName()).toBe('Agro Foods');
+    expect(page.canSaveEdit(target)).toBe(false);
+    page.editName.set('  Agro Foods Ltd ');
+    page.editGstin.set(GSTIN.toLowerCase());
+    expect(page.editChanges(target)).toEqual({ name: 'Agro Foods Ltd' });
+    page.saveEdit(target);
+    refresh();
+    expect(api.updateSupplier).toHaveBeenCalledWith('s-1', { name: 'Agro Foods Ltd' });
+    expect(page.suppliers()[0].name).toBe('Agro Foods Ltd');
+    expect(page.editingId()).toBeNull();
+    expect(text()).toContain('Agro Foods Ltd was updated.');
+  });
+
+  it('allows a GSTIN to be cleared and validates edits like new suppliers', () => {
+    api.updateSupplier = vi.fn().mockImplementation((id: string, body: Partial<Supplier>) => of({ ...supplier({ id }), ...body }));
+    create();
+    const target = page.suppliers()[0];
+    page.startEdit(target);
+    page.editGstin.set('');
+    expect(page.editChanges(target)).toEqual({ gstin: '' });
+    expect(page.canSaveEdit(target)).toBe(true);
+    page.editGstin.set('BAD');
+    expect(page.canSaveEdit(target)).toBe(false);
+    page.editGstin.set(GSTIN);
+    page.editEmail.set('nope');
+    expect(page.editEmailError()).toContain('valid email');
+    expect(page.canSaveEdit(target)).toBe(false);
+    page.editEmail.set(target.email);
+    page.editName.set('   ');
+    expect(page.canSaveEdit(target)).toBe(false);
+  });
+
+  it('shows the server\'s message next to the field when an edit is refused', () => {
+    api.updateSupplier = vi.fn().mockReturnValue(throwError(() => new ApiError('VALIDATION_ERROR', 'Invalid', { gstin: ['A supplier with this GSTIN already exists in this store.'] }, null, 400)));
+    create();
+    const target = page.suppliers()[0];
+    page.startEdit(target);
+    page.editGstin.set('29AAGCB7383J1Z4');
+    page.saveEdit(target);
+    refresh();
+    expect(text()).toContain('already exists');
+    expect(page.editingId()).toBe('s-1');
+  });
+
+  it('asks before deactivating, then deactivates and can reactivate', () => {
+    api.updateSupplier = vi.fn().mockImplementation((id: string, body: Partial<Supplier>) => of({ ...supplier({ id }), ...body }));
+    create();
+    const target = page.suppliers()[0];
+    page.askDeactivate(target);
+    refresh();
+    expect(text()).toContain('will no longer appear when you receive goods');
+    expect(api.updateSupplier).not.toHaveBeenCalled();
+    page.cancelDeactivate();
+    expect(page.confirmingId()).toBeNull();
+    page.askDeactivate(target);
+    page.deactivate(target);
+    refresh();
+    expect(api.updateSupplier).toHaveBeenCalledWith('s-1', { is_active: false });
+    expect(page.suppliers()[0].is_active).toBe(false);
+    expect(text()).toContain('Agro Foods was deactivated.');
+    expect(text()).toContain('Reactivate');
+    page.reactivate(page.suppliers()[0]);
+    expect(api.updateSupplier).toHaveBeenLastCalledWith('s-1', { is_active: true });
+    expect(page.suppliers()[0].is_active).toBe(true);
+  });
+
+  it('hides edit and deactivate from roles that cannot change suppliers, and explains refusals', () => {
+    api.updateSupplier = vi.fn().mockReturnValue(throwError(() => new ApiError('FORBIDDEN', 'no', {}, null, 403)));
+    create();
+    page.askDeactivate(page.suppliers()[0]);
+    page.deactivate(page.suppliers()[0]);
+    refresh();
+    expect(text()).toContain('Only a manager, administrator or the owner can change suppliers.');
+    roles.set(['accountant']);
+    page.cancelDeactivate();
+    refresh();
+    expect(text()).not.toContain('Edit');
+    expect(text()).not.toContain('Deactivate');
+  });
+
+  it('does not start a second change while one is in flight', () => {
+    api.updateSupplier = vi.fn();
+    create();
+    page.busyId.set('s-2');
+    page.deactivate(page.suppliers()[0]);
+    expect(api.updateSupplier).not.toHaveBeenCalled();
   });
 });

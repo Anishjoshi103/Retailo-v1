@@ -1,0 +1,51 @@
+<section class="page" aria-labelledby="delivery-title">
+  <nav class="actions">
+    <a class="back" routerLink="/purchases/history">← All deliveries</a>
+  </nav>
+
+  @if (loading()) {
+    <p class="notice" role="status">Loading delivery…</p>
+  } @else if (notFound()) {
+    <div class="notice notice-error" role="alert">Delivery not found. It may belong to another branch or store.</div>
+  } @else if (errorMessage()) {
+    <div class="notice notice-error" role="alert">{{ errorMessage() }}</div>
+  } @else if (delivery(); as current) {
+    <article class="sheet">
+      <header class="sheet-head">
+        <div>
+          <p class="eyebrow">GOODS RECEIVED</p>
+          <h1 id="delivery-title">{{ current.supplier_name }}</h1>
+        </div>
+        <dl class="meta">
+          <div><dt>Received</dt><dd>{{ day(current.received_at) }}</dd></div>
+          <div><dt>Supplier invoice</dt><dd>{{ current.supplier_invoice_number || '—' }}</dd></div>
+          <div><dt>Items</dt><dd>{{ current.line_count }}</dd></div>
+        </dl>
+      </header>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Item</th>
+              <th scope="col" class="numeric">Quantity</th>
+              <th scope="col" class="numeric">Cost each</th>
+              <th scope="col" class="numeric">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of current.lines; track line.id) {
+              <tr>
+                <td><span class="name">{{ line.name }}</span><span class="sub">{{ line.sku }}</span></td>
+                <td class="numeric">{{ line.quantity }} {{ line.unit }}</td>
+                <td class="numeric">₹{{ line.unit_cost }}</td>
+                <td class="numeric strong">₹{{ line.line_total }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="grand"><span>Total cost</span><strong>₹{{ current.total_cost }}</strong></p>
+    </article>
+  }
+</section>

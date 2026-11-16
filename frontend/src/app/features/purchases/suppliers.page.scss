@@ -31,7 +31,15 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .chip { min-height: 2.25rem; padding: 0 var(--space-4); border: 1px solid var(--color-border); background: transparent; color: var(--color-text-secondary); border-radius: var(--radius-full); }
 .chip.active { border-color: var(--color-brand); color: var(--color-brand); }
 .list { margin: 0; padding: 0; list-style: none; }
-.item { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.item { display: block; }
+.item-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-top: var(--space-3); }
+.edit, .confirm { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
+.confirm p { margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.danger { background: var(--color-danger); color: var(--color-on-brand); }
+.edit .primary, .actions .primary { margin-top: 0; }
+.row-message { margin: var(--space-3) 0 0; color: var(--color-brand); font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); }
+.row-error { color: var(--color-danger); }
 .name { display: block; color: var(--color-heading); font-weight: var(--font-weight-bold); overflow-wrap: anywhere; }
 .badge { flex: none; padding: 0 var(--space-2); border: 1px solid var(--color-border); border-radius: var(--radius-full); color: var(--color-text-secondary); font-size: var(--font-size-xs); }
 .field-error { color: var(--color-danger); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); }
