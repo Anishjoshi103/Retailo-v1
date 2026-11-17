@@ -32,6 +32,7 @@ This matrix describes the API routes currently registered in `config/urls.py` an
 | `POST /api/v1/sales/{id}/returns` | Allow | Allow | Allow | Allow | Deny | Active tenant and active branch grant on the sale; others receive 404. Refunds are cash only |
 | `GET /api/v1/credit-notes` | Read | Read | Read | Read | Read | Only credit notes of branches granted to the membership; `branch_id` outside the grants returns 403 |
 | `GET /api/v1/credit-notes/{id}` | Read | Read | Read | Read | Read | Active tenant and active branch grant; others receive 404 |
+| `GET /api/v1/reports/sales-summary` | Read | Read | Read | Deny | Read | Financial figures. Only branches granted to the membership; `branch_id` outside the grants returns 403 |
 | `GET /api/v1/branches` | Read | Read | Read | Read | Read | Only active branches granted to the membership |
 | `PATCH /api/v1/branches/{id}` | Allow | Allow | Deny | Deny | Deny | Active tenant and active branch grant; others receive 404 |
 | `GET /api/v1/staff` | Read | Read | Deny | Deny | Deny | Members of the caller's own store only |
