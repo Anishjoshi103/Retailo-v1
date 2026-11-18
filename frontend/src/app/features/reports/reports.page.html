@@ -1,0 +1,145 @@
+<section class="reports" aria-labelledby="reports-title">
+  <header class="page-header">
+    <p class="eyebrow">REPORTS</p>
+    <h1 id="reports-title">Sales summary</h1>
+    <p class="intro">What was sold, returned and collected. Sales count on the invoice date and returns on the credit note date.</p>
+  </header>
+
+  <div class="controls">
+    <div class="chips" role="group" aria-label="Date range">
+      @for (preset of presets; track preset.value) {
+        <button type="button" class="chip" [class.active]="range() === preset.value" [attr.aria-pressed]="range() === preset.value" (click)="choosePreset(preset.value)">{{ preset.label }}</button>
+      }
+      <button type="button" class="chip" [class.active]="range() === 'custom'" [attr.aria-pressed]="range() === 'custom'" (click)="chooseCustom()">Custom</button>
+    </div>
+    <div class="chips" role="group" aria-label="Branches">
+      <button type="button" class="chip" [class.active]="scope() === 'branch'" [attr.aria-pressed]="scope() === 'branch'" (click)="setScope('branch')">This branch</button>
+      <button type="button" class="chip" [class.active]="scope() === 'all'" [attr.aria-pressed]="scope() === 'all'" (click)="setScope('all')">All my branches</button>
+    </div>
+  </div>
+
+  @if (range() === 'custom') {
+    <div class="custom">
+      <label>
+        <span>From</span>
+        <input type="date" [value]="customFrom()" (input)="customFrom.set(inputValue($event))" />
+      </label>
+      <label>
+        <span>To</span>
+        <input type="date" [value]="customTo()" (input)="customTo.set(inputValue($event))" />
+      </label>
+      <button type="button" class="primary" [disabled]="customProblem() !== ''" (click)="load()">Show report</button>
+    </div>
+    @if (customProblem()) {
+      <p class="field-error" role="alert">{{ customProblem() }}</p>
+    }
+  }
+
+  @if (errorMessage()) {
+    <div class="notice notice-error" role="alert">
+      <span>{{ errorMessage() }}</span>
+      <button type="button" class="text-button" (click)="load()">Try again</button>
+    </div>
+  }
+
+  @if (loading() && !summary()) {
+    <p class="notice" role="status">Loading report…</p>
+  }
+
+  @if (summary(); as report) {
+    <p class="range" [attr.aria-busy]="loading()">
+      {{ report.date_from === report.date_to ? report.date_from : report.date_from + ' to ' + report.date_to }}
+      · {{ report.branch_id ? 'this branch' : report.branch_count + ' branch(es)' }}
+    </p>
+
+    @if (!hasActivity()) {
+      <div class="empty-state">
+        <h2>No sales in this period</h2>
+        <p>Nothing was sold or returned in the dates and branches you chose.</p>
+      </div>
+    } @else {
+      <div class="headline card">
+        <span class="label">Net sales</span>
+        <span class="figure">₹{{ report.net.grand_total }}</span>
+        <span class="sub">₹{{ report.sales.grand_total }} sold less ₹{{ report.returns.grand_total }} returned</span>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Sales</h2>
+          <dl>
+            <div><dt>Invoices</dt><dd>{{ report.sales.count }}</dd></div>
+            <div><dt>Total</dt><dd>₹{{ report.sales.grand_total }}</dd></div>
+          </dl>
+        </div>
+        <div class="card">
+          <h2>Returns</h2>
+          <dl>
+            <div><dt>Credit notes</dt><dd>{{ report.returns.count }}</dd></div>
+            <div><dt>Cash refunded</dt><dd>₹{{ report.returns.grand_total }}</dd></div>
+          </dl>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Tax on sales</h2>
+        <dl>
+          <div><dt>Taxable value</dt><dd>₹{{ report.sales.taxable_total }}</dd></div>
+          <div><dt>CGST</dt><dd>₹{{ report.sales.cgst_total }}</dd></div>
+          <div><dt>SGST</dt><dd>₹{{ report.sales.sgst_total }}</dd></div>
+          <div><dt>IGST</dt><dd>₹{{ report.sales.igst_total }}</dd></div>
+          <div class="strong"><dt>Total tax</dt><dd>₹{{ report.sales.total_tax }}</dd></div>
+          <div><dt>Round off</dt><dd>₹{{ report.sales.round_off }}</dd></div>
+        </dl>
+        <p class="note">After returns, tax collected is ₹{{ report.net.total_tax }} on ₹{{ report.net.taxable_total }} of taxable value.</p>
+      </div>
+
+      <div class="card">
+        <h2>How customers paid</h2>
+        @if (report.payments.length === 0) {
+          <p class="note">No payments recorded.</p>
+        } @else {
+          <dl>
+            @for (payment of report.payments; track payment.method) {
+              <div><dt>{{ methodLabel(payment.method) }} <span class="count">({{ payment.count }})</span></dt><dd>₹{{ payment.amount }}</dd></div>
+            }
+          </dl>
+        }
+        <p class="cash">
+          <span>Cash in hand (cash sales less cash refunds)</span>
+          <strong>{{ rupees(cashInHandPaise()) }}</strong>
+        </p>
+      </div>
+
+      @if (report.by_day.length > 1) {
+        <div class="card">
+          <h2>By day</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col" class="numeric">Invoices</th>
+                  <th scope="col" class="numeric">Sales</th>
+                  <th scope="col" class="numeric">Returns</th>
+                  <th scope="col" class="numeric">Net</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (day of report.by_day; track day.date) {
+                  <tr>
+                    <td>{{ day.date }}</td>
+                    <td class="numeric">{{ day.sales_count }}</td>
+                    <td class="numeric">₹{{ day.sales_total }}</td>
+                    <td class="numeric">₹{{ day.returns_total }}</td>
+                    <td class="numeric strong">₹{{ day.net_total }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    }
+  }
+</section>

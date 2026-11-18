@@ -30,5 +30,6 @@ describe('SidenavComponent', () => {
     expect(labels).not.toContain('Purchases');
     expect(labels).not.toContain('Settings');
     expect(labels).toContain('GST & invoices');
+    expect(labels).toContain('Reports');
   });
 });

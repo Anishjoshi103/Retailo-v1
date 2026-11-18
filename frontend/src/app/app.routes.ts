@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { roleBranchGuard } from './core/auth/role-branch.guard';
 
-const featurePaths = ['reports'];
 const allRoles = ['owner', 'admin', 'manager', 'cashier', 'accountant'];
 export const routes: Routes = [
   { path: 'auth', loadChildren: () => import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES) },
@@ -22,11 +21,7 @@ export const routes: Routes = [
     { path: 'purchases/history', canActivate: [roleBranchGuard], data: { title: 'Deliveries', branchRequired: true, roles: ['owner', 'admin', 'manager', 'accountant'] }, loadComponent: () => import('./features/purchases/deliveries.page').then((m) => m.DeliveriesPage) },
     { path: 'purchases/history/:id', canActivate: [roleBranchGuard], data: { title: 'Delivery', branchRequired: true, roles: ['owner', 'admin', 'manager', 'accountant'] }, loadComponent: () => import('./features/purchases/delivery-detail.page').then((m) => m.DeliveryDetailPage) },
     { path: 'purchases/suppliers', canActivate: [roleBranchGuard], data: { title: 'Suppliers', roles: ['owner', 'admin', 'manager'] }, loadComponent: () => import('./features/purchases/suppliers.page').then((m) => m.SuppliersPage) },
-    ...featurePaths.map((path) => ({ path, canActivate: [roleBranchGuard], data: { title: featureTitle(path), ...(path === 'reports' ? { roles: ['owner', 'admin', 'manager'] } : {}), }, loadComponent: () => import('./features/placeholder/feature-placeholder.page').then((m) => m.FeaturePlaceholderPage) }))
+    { path: 'reports', canActivate: [roleBranchGuard], data: { title: 'Reports', roles: ['owner', 'admin', 'manager', 'accountant'] }, loadComponent: () => import('./features/reports/reports.page').then((m) => m.ReportsPage) }
   ] },
   { path: '**', redirectTo: '' }
 ];
-function featureTitle(path: string): string {
-  const titles: Readonly<Record<string, string>> = { inventory:'Inventory', pos:'Point of sale', gst:'GST & invoices', reports:'Reports', settings:'Settings' };
-  return titles[path] ?? 'Workspace';
-}
