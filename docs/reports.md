@@ -29,7 +29,33 @@ Response (money as two-decimal strings):
 Totals are summed in the database. Sales and returns are counted by their own dates, so a return taken today
 for an earlier sale reduces today's net, not the day of the sale.
 
+## GST sales register: `GET /api/v1/reports/gst-register`
+
+The tables an accountant files a GSTR-1 style return from. Same access, dates (`date_from`, `date_to`) and
+`branch_id` rules as the sales summary. **All figures are net of returns** for the period and come from the
+posted invoice and credit note lines, so they always agree with the sales summary (tested).
+
+- `rates`: by place of supply (state code) and tax rate: taxable value, IGST, CGST, SGST/UTGST, cess, plus the
+  sales and returns taxable values it was netted from.
+- `hsn`: by HSN code, unit and rate: description, unit quantity code (UQC), net quantity, total value, taxable
+  value and tax. Units map to `NOS` (each), `KGS`, `GMS`, `LTR`, `MLT`, `MTR`, `PAC`; anything else is `OTH`.
+- `documents`: per branch, the first and last invoice number and credit note number issued in the period and
+  how many. `cancelled` is always 0 because posted documents are never cancelled (corrections are credit notes).
+- `totals` and `missing_hsn_lines`: the number of sold lines whose product has no HSN code, so they can be fixed.
+
+`GET /api/v1/reports/gst-register.csv?table=rates|hsn|documents` returns one table as a CSV download with
+the same filters. Text cells that start with `=`, `+`, `-` or `@` are prefixed with an apostrophe so a
+spreadsheet cannot run them as formulas.
+
+### What this is, and is not
+
+- It covers **B2C supplies by place of supply and rate** (the small-supply table) and the HSN and document
+  summaries. Customer GSTIN and inter-state business sales are not recorded yet, so there is no B2B table.
+- Cess is not modelled and is always `0.00`.
+- Branch series are numbered per branch, so documents are listed per branch.
+- It is a working aid: have an accountant review the figures before filing. The column headers follow the
+  return's table names but the files are not the government offline tool's import format.
+
 ## Not built yet
 
-A GST sales register / GSTR-1 style export (by rate and place of supply, and HSN summary), stock valuation,
-purchase reports and a per-product sales report.
+Stock valuation, purchase reports, a per-product sales report, and a B2B / inter-state table.

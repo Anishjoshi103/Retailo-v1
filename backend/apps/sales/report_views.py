@@ -49,31 +49,40 @@ def _totals(queryset) -> dict:
     return {"count": row["count"], **{key: _money(row[key]) for key in TOTAL_FIELDS}}
 
 
+def report_scope(request):
+    """Resolve who is asking and what they asked about, with the rules every financial report shares.
+
+    Returns ``(membership, date_from, date_to, branches, branch_id)``. Only owners, admins, managers and
+    accountants may read financial reports; only branches the membership is granted are included.
+    """
+    membership = require_membership_role(
+        request, REPORT_ROLES, "Sales reports are available to owners, administrators, managers and accountants."
+    )
+    today = timezone.localdate()
+    date_from = _date_param(request.query_params, "date_from", today)
+    # No end date means a one-day report for the start date (today by default).
+    date_to = _date_param(request.query_params, "date_to", date_from)
+    if date_to < date_from:
+        raise ValidationError({"date_to": "The end date is before the start date."})
+    # Counted inclusively: 2025-01-01 to 2025-12-31 is 365 days.
+    if (date_to - date_from).days + 1 > MAX_RANGE_DAYS:
+        raise ValidationError({"date_to": f"Choose a range of at most {MAX_RANGE_DAYS} days."})
+    branches = authorized_branches(membership)
+    branch_id = uuid_param(request.query_params, "branch_id")
+    if branch_id is not None:
+        if not membership_can_access_branch(membership, branch_id):
+            raise PermissionDenied("You do not have access to the requested branch.")
+        branches = branches.filter(pk=branch_id)
+    return membership, date_from, date_to, branches, branch_id
+
+
 class SalesSummaryReportView(APIView):
     """Sales, returns, tax and tenders for a date range and one or all of the caller's branches."""
 
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        membership = require_membership_role(
-            request, REPORT_ROLES, "Sales reports are available to owners, administrators, managers and accountants."
-        )
-        today = timezone.localdate()
-        date_from = _date_param(request.query_params, "date_from", today)
-        # No end date means a one-day report for the start date (today by default).
-        date_to = _date_param(request.query_params, "date_to", date_from)
-        if date_to < date_from:
-            raise ValidationError({"date_to": "The end date is before the start date."})
-        # Counted inclusively: 2025-01-01 to 2025-12-31 is 365 days.
-        if (date_to - date_from).days + 1 > MAX_RANGE_DAYS:
-            raise ValidationError({"date_to": f"Choose a range of at most {MAX_RANGE_DAYS} days."})
-
-        branches = authorized_branches(membership)
-        branch_id = uuid_param(request.query_params, "branch_id")
-        if branch_id is not None:
-            if not membership_can_access_branch(membership, branch_id):
-                raise PermissionDenied("You do not have access to the requested branch.")
-            branches = branches.filter(pk=branch_id)
+        membership, date_from, date_to, branches, branch_id = report_scope(request)
 
         tenant_id = membership.tenant_id
         sales = Sale.objects.for_tenant(tenant_id).filter(
