@@ -3,6 +3,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from apps.accounts.staff_views import StaffDetailView, StaffListCreateView, StaffResendInviteView
 from apps.accounts.views import BranchesView
+from apps.sales.gst_register import GstRegisterCsvView, GstRegisterView
 from apps.sales.report_views import SalesSummaryReportView
 from apps.sales.return_views import CreditNoteDetailView, CreditNoteListView, SaleReturnView
 from apps.sales.views import SaleDetailView, SaleListCreateView
@@ -19,6 +20,8 @@ urlpatterns = [
     path("api/v1/sales/<uuid:sale_id>/returns", SaleReturnView.as_view(), name="sale-return"),
     path("api/v1/credit-notes", CreditNoteListView.as_view(), name="credit-note-list"),
     path("api/v1/reports/sales-summary", SalesSummaryReportView.as_view(), name="report-sales-summary"),
+    path("api/v1/reports/gst-register", GstRegisterView.as_view(), name="report-gst-register"),
+    path("api/v1/reports/gst-register.csv", GstRegisterCsvView.as_view(), name="report-gst-register-csv"),
     path("api/v1/staff", StaffListCreateView.as_view(), name="staff-list-create"),
     path("api/v1/staff/<uuid:membership_id>", StaffDetailView.as_view(), name="staff-detail"),
     path("api/v1/staff/<uuid:membership_id>/resend-invite", StaffResendInviteView.as_view(), name="staff-resend-invite"),
