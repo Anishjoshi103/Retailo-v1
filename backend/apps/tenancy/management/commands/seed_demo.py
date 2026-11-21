@@ -1,6 +1,6 @@
+from decimal import Decimal
 import getpass
 import os
-from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
@@ -95,7 +95,7 @@ class Command(BaseCommand):
             )
             if tenant.name != DEMO_TENANT_NAME:
                 raise CommandError(
-                    "The reserved demo slug belongs to another store; no data was changed."
+                    "The reserved demo slug is already used by a non-demo store; no data was changed."
                 )
             if tenant.status != Tenant.Status.ACTIVE:
                 raise CommandError("The demo tenant is inactive; activate it before reseeding.")
