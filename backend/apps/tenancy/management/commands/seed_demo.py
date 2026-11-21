@@ -10,7 +10,6 @@ from apps.catalog.models import Product
 from apps.inventory.models import InventoryBalance, StockMovement, Supplier
 from apps.tenancy.models import Branch, BranchAccess, Membership, Tenant
 
-
 DEMO_TENANT_SLUG = "retailo-demo"
 DEMO_TENANT_NAME = "Retailo Demo Store"
 DEFAULT_OWNER_EMAIL = "owner@retailo-demo.local"
