@@ -35,4 +35,17 @@ describe('ApiClient URL construction', () => {
     expect(request.request.body).toEqual({ state_code: '27' });
     request.flush({});
   });
+
+  it('downloads a file as a blob from the configured API base', () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: APP_CONFIG, useValue: { apiBaseUrl: '/api/v1' } }],
+    });
+    let received: Blob | null = null;
+    TestBed.inject(ApiClient).getBlob('reports/gst-register.csv').subscribe((blob) => (received = blob));
+    const request = TestBed.inject(HttpTestingController).expectOne('/api/v1/reports/gst-register.csv');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.responseType).toBe('blob');
+    request.flush(new Blob(['a,b'], { type: 'text/csv' }));
+    expect(received).not.toBeNull();
+  });
 });

@@ -26,6 +26,14 @@ describe('report date ranges', () => {
     expect(presetRange('yesterday', new Date(2028, 2, 1))).toEqual({ dateFrom: '2028-02-29', dateTo: '2028-02-29' });
   });
 
+  it('works out the whole of last month, whatever its length, including across a year', () => {
+    expect(presetRange('lastMonth', now)).toEqual({ dateFrom: '2026-10-01', dateTo: '2026-10-31' });
+    expect(presetRange('lastMonth', new Date(2026, 2, 10))).toEqual({ dateFrom: '2026-02-01', dateTo: '2026-02-28' });
+    expect(presetRange('lastMonth', new Date(2028, 2, 10))).toEqual({ dateFrom: '2028-02-01', dateTo: '2028-02-29' });
+    expect(presetRange('lastMonth', new Date(2027, 0, 5))).toEqual({ dateFrom: '2026-12-01', dateTo: '2026-12-31' });
+    expect(presetRange('lastMonth', new Date(2026, 4, 31))).toEqual({ dateFrom: '2026-04-01', dateTo: '2026-04-30' });
+  });
+
   it('starts the month on the first even when today is the first', () => {
     expect(presetRange('month', new Date(2026, 10, 1))).toEqual({ dateFrom: '2026-11-01', dateTo: '2026-11-01' });
   });

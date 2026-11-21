@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { SessionContextService } from '../../core/auth/session-context.service';
 import { formatRupees, parseMoney } from '../pos/money';
@@ -23,6 +24,7 @@ const METHOD_LABELS: Readonly<Record<string, string>> = { cash: 'Cash', upi: 'UP
 @Component({
   selector: 'app-reports-page',
   standalone: true,
+  imports: [RouterLink],
   templateUrl: './reports.page.html',
   styleUrl: './reports.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

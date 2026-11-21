@@ -34,4 +34,24 @@ describe('ReportsApi', () => {
     expect(request.request.params.keys()).toEqual([]);
     request.flush({});
   });
+
+  it('requests the GST register with the dates and branch', () => {
+    api.gstRegister({ dateFrom: '2026-10-01', dateTo: '2026-10-31', branchId: 'b-1' }).subscribe();
+    const request = http.expectOne((req) => req.url === '/api/v1/reports/gst-register');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.get('date_from')).toBe('2026-10-01');
+    expect(request.request.params.get('date_to')).toBe('2026-10-31');
+    expect(request.request.params.get('branch_id')).toBe('b-1');
+    request.flush({});
+  });
+
+  it('downloads one register table as a CSV blob', () => {
+    api.gstRegisterCsv('hsn', { dateFrom: '2026-10-01', dateTo: '2026-10-31' }).subscribe();
+    const request = http.expectOne((req) => req.url === '/api/v1/reports/gst-register.csv');
+    expect(request.request.responseType).toBe('blob');
+    expect(request.request.params.get('table')).toBe('hsn');
+    expect(request.request.params.get('date_from')).toBe('2026-10-01');
+    expect(request.request.params.has('branch_id')).toBe(false);
+    request.flush(new Blob(['x']));
+  });
 });

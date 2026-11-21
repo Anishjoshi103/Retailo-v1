@@ -109,6 +109,14 @@ describe('application routes', () => {
     expect(route?.loadComponent).toBeDefined();
   });
 
+  it('serves the GST register to owners, admins, managers and accountants only', () => {
+    const shell = routes.find((route) => route.path === '');
+    const route = shell?.children?.find((child) => child.path === 'reports/gst');
+    expect(route?.canActivate).toContain(roleBranchGuard);
+    expect(route?.data?.['roles']).toEqual(['owner', 'admin', 'manager', 'accountant']);
+    expect(route?.loadComponent).toBeDefined();
+  });
+
   it('serves the billing screen at pos for selling roles only, and requires a branch', () => {
     const shell = routes.find((route) => route.path === '');
     const pos = shell?.children?.find((route) => route.path === 'pos');
