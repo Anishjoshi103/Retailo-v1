@@ -1,0 +1,154 @@
+<section class="gst" aria-labelledby="gst-title">
+  <nav class="tabs" aria-label="Reports sections">
+    <a routerLink="/reports">Sales summary</a>
+    <a routerLink="/reports/gst" aria-current="page">GST register</a>
+  </nav>
+
+  <header class="page-header">
+    <p class="eyebrow">REPORTS</p>
+    <h1 id="gst-title">GST register</h1>
+    <p class="intro">The tables a return is filed from, net of returns. Download each as a spreadsheet file.</p>
+  </header>
+
+  <div class="controls">
+    <div class="chips" role="group" aria-label="Period">
+      <button type="button" class="chip" [class.active]="range() === 'lastMonth'" [attr.aria-pressed]="range() === 'lastMonth'" (click)="choose('lastMonth')">Last month</button>
+      <button type="button" class="chip" [class.active]="range() === 'month'" [attr.aria-pressed]="range() === 'month'" (click)="choose('month')">This month</button>
+      <button type="button" class="chip" [class.active]="range() === 'custom'" [attr.aria-pressed]="range() === 'custom'" (click)="choose('custom')">Custom</button>
+    </div>
+    <div class="chips" role="group" aria-label="Branches">
+      <button type="button" class="chip" [class.active]="scope() === 'branch'" [attr.aria-pressed]="scope() === 'branch'" (click)="setScope('branch')">This branch</button>
+      <button type="button" class="chip" [class.active]="scope() === 'all'" [attr.aria-pressed]="scope() === 'all'" (click)="setScope('all')">All my branches</button>
+    </div>
+  </div>
+
+  @if (range() === 'custom') {
+    <div class="custom">
+      <label><span>From</span><input type="date" [value]="customFrom()" (input)="customFrom.set(inputValue($event))" /></label>
+      <label><span>To</span><input type="date" [value]="customTo()" (input)="customTo.set(inputValue($event))" /></label>
+      <button type="button" class="primary" [disabled]="customProblem() !== ''" (click)="load()">Show register</button>
+    </div>
+    @if (customProblem()) {
+      <p class="field-error" role="alert">{{ customProblem() }}</p>
+    }
+  }
+
+  @if (errorMessage()) {
+    <div class="notice notice-error" role="alert">
+      <span>{{ errorMessage() }}</span>
+      <button type="button" class="text-button" (click)="load()">Try again</button>
+    </div>
+  }
+  @if (downloadError()) {
+    <p class="field-error" role="alert">{{ downloadError() }}</p>
+  }
+  @if (loading() && !register()) {
+    <p class="notice" role="status">Loading the register…</p>
+  }
+
+  @if (register(); as report) {
+    <p class="range" [attr.aria-busy]="loading()">
+      {{ report.date_from }} to {{ report.date_to }} · {{ report.branch_id ? 'this branch' : report.branch_count + ' branch(es)' }}
+    </p>
+
+    @if (report.missing_hsn_lines > 0) {
+      <p class="notice notice-warn" role="status">
+        {{ report.missing_hsn_lines }} sold item line(s) have no HSN code, so they appear under a blank HSN. Add the HSN code to those products in the catalogue before filing.
+      </p>
+    }
+
+    @if (!hasData()) {
+      <div class="empty-state">
+        <h2>Nothing to report</h2>
+        <p>There were no sales or returns in these dates and branches.</p>
+      </div>
+    } @else {
+      <div class="card totals">
+        <h2>Totals for the period</h2>
+        <dl>
+          <div><dt>Taxable value</dt><dd>₹{{ report.totals.taxable_value }}</dd></div>
+          <div><dt>CGST</dt><dd>₹{{ report.totals.cgst }}</dd></div>
+          <div><dt>SGST / UTGST</dt><dd>₹{{ report.totals.sgst }}</dd></div>
+          <div><dt>IGST</dt><dd>₹{{ report.totals.igst }}</dd></div>
+          <div class="strong"><dt>Total tax</dt><dd>₹{{ report.totals.total_tax }}</dd></div>
+        </dl>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Sales by tax rate</h2>
+          <button type="button" class="secondary" [disabled]="downloading() !== null" (click)="download('rates')">{{ downloading() === 'rates' ? 'Preparing…' : 'Download CSV' }}</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th scope="col">State</th><th scope="col" class="numeric">Rate</th><th scope="col" class="numeric">Taxable value</th>
+              <th scope="col" class="numeric">IGST</th><th scope="col" class="numeric">CGST</th><th scope="col" class="numeric">SGST</th>
+            </tr></thead>
+            <tbody>
+              @for (row of report.rates; track row.place_of_supply + row.gst_rate) {
+                <tr>
+                  <td>{{ row.place_of_supply }}</td><td class="numeric">{{ row.gst_rate }}%</td><td class="numeric">₹{{ row.taxable_value }}</td>
+                  <td class="numeric">₹{{ row.igst }}</td><td class="numeric">₹{{ row.cgst }}</td><td class="numeric">₹{{ row.sgst }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="note">State is the two-digit GST state code of the place of supply.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>HSN summary</h2>
+          <button type="button" class="secondary" [disabled]="downloading() !== null" (click)="download('hsn')">{{ downloading() === 'hsn' ? 'Preparing…' : 'Download CSV' }}</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th scope="col">HSN</th><th scope="col">Description</th><th scope="col">UQC</th><th scope="col" class="numeric">Quantity</th>
+              <th scope="col" class="numeric">Rate</th><th scope="col" class="numeric">Taxable value</th><th scope="col" class="numeric">Total value</th>
+            </tr></thead>
+            <tbody>
+              @for (row of report.hsn; track row.hsn_code + row.uqc + row.gst_rate) {
+                <tr>
+                  <td>{{ row.hsn_code || '—' }}</td><td>{{ row.description }}</td><td>{{ row.uqc }}</td><td class="numeric">{{ row.quantity }}</td>
+                  <td class="numeric">{{ row.gst_rate }}%</td><td class="numeric">₹{{ row.taxable_value }}</td><td class="numeric">₹{{ row.total_value }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Documents issued</h2>
+          <button type="button" class="secondary" [disabled]="downloading() !== null" (click)="download('documents')">{{ downloading() === 'documents' ? 'Preparing…' : 'Download CSV' }}</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th scope="col">Type</th><th scope="col">Branch</th><th scope="col">From</th><th scope="col">To</th>
+              <th scope="col" class="numeric">Total</th><th scope="col" class="numeric">Cancelled</th>
+            </tr></thead>
+            <tbody>
+              @for (row of report.documents; track row.document_type + row.series) {
+                <tr>
+                  <td>{{ row.document_type }}</td><td>{{ row.series }}</td><td>{{ row.from }}</td><td>{{ row.to }}</td>
+                  <td class="numeric">{{ row.total }}</td><td class="numeric">{{ row.cancelled }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <p class="disclaimer">
+        This covers sales to consumers by state and rate, the HSN summary and the document ranges. Sales to GST-registered
+        customers and sales to other states are not recorded yet, and cess is not included. Have an accountant review these
+        figures before you file.
+      </p>
+    }
+  }
+</section>

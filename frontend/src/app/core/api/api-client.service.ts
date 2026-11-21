@@ -7,6 +7,8 @@ export interface ApiRequestOptions { readonly headers?: HttpHeaders; readonly pa
 export class ApiClient {
   private readonly http = inject(HttpClient); private readonly config = inject(APP_CONFIG);
   get<T>(path: string, options: ApiRequestOptions = {}): Observable<T> { return this.http.get<T>(this.url(path), options); }
+  /** Fetch a file (such as a CSV) with the same base URL and sign-in headers as every other request. */
+  getBlob(path: string, options: ApiRequestOptions = {}): Observable<Blob> { return this.http.get(this.url(path), { ...options, responseType: 'blob' }); }
   post<R, B>(path: string, body: B, options: ApiRequestOptions = {}): Observable<R> { return this.http.post<R>(this.url(path), body, options); }
   put<R, B>(path: string, body: B, options: ApiRequestOptions = {}): Observable<R> { return this.http.put<R>(this.url(path), body, options); }
   patch<R, B>(path: string, body: B, options: ApiRequestOptions = {}): Observable<R> { return this.http.patch<R>(this.url(path), body, options); }

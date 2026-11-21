@@ -1,6 +1,6 @@
 /** Date ranges for the report presets. Dates are plain `YYYY-MM-DD` strings in the device's calendar. */
 
-export type Preset = 'today' | 'yesterday' | 'week' | 'month';
+export type Preset = 'today' | 'yesterday' | 'week' | 'month' | 'lastMonth';
 
 export interface DateRange {
   readonly dateFrom?: string;
@@ -33,5 +33,8 @@ export function presetRange(preset: Preset, now: Date): DateRange {
       return { dateFrom: toIsoDate(daysBefore(now, 6)), dateTo: toIsoDate(now) };
     case 'month':
       return { dateFrom: toIsoDate(new Date(now.getFullYear(), now.getMonth(), 1)), dateTo: toIsoDate(now) };
+    case 'lastMonth':
+      // Day 0 of this month is the last day of the previous one, whatever its length.
+      return { dateFrom: toIsoDate(new Date(now.getFullYear(), now.getMonth() - 1, 1)), dateTo: toIsoDate(new Date(now.getFullYear(), now.getMonth(), 0)) };
   }
 }

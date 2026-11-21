@@ -21,6 +21,7 @@ export const routes: Routes = [
     { path: 'purchases/history', canActivate: [roleBranchGuard], data: { title: 'Deliveries', branchRequired: true, roles: ['owner', 'admin', 'manager', 'accountant'] }, loadComponent: () => import('./features/purchases/deliveries.page').then((m) => m.DeliveriesPage) },
     { path: 'purchases/history/:id', canActivate: [roleBranchGuard], data: { title: 'Delivery', branchRequired: true, roles: ['owner', 'admin', 'manager', 'accountant'] }, loadComponent: () => import('./features/purchases/delivery-detail.page').then((m) => m.DeliveryDetailPage) },
     { path: 'purchases/suppliers', canActivate: [roleBranchGuard], data: { title: 'Suppliers', roles: ['owner', 'admin', 'manager'] }, loadComponent: () => import('./features/purchases/suppliers.page').then((m) => m.SuppliersPage) },
+    { path: 'reports/gst', canActivate: [roleBranchGuard], data: { title: 'GST register', roles: ['owner', 'admin', 'manager', 'accountant'] }, loadComponent: () => import('./features/reports/gst-register.page').then((m) => m.GstRegisterPage) },
     { path: 'reports', canActivate: [roleBranchGuard], data: { title: 'Reports', roles: ['owner', 'admin', 'manager', 'accountant'] }, loadComponent: () => import('./features/reports/reports.page').then((m) => m.ReportsPage) }
   ] },
   { path: '**', redirectTo: '' }

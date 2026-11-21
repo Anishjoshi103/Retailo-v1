@@ -52,3 +52,55 @@ export interface SalesSummaryQuery {
   /** Omit for every branch the caller may see. */
   readonly branchId?: string;
 }
+
+export type GstTable = 'rates' | 'hsn' | 'documents';
+
+export interface GstRateRow {
+  readonly place_of_supply: string;
+  readonly gst_rate: string;
+  /** Net of returns. */
+  readonly taxable_value: string;
+  readonly igst: string;
+  readonly cgst: string;
+  readonly sgst: string;
+  readonly cess: string;
+  readonly sales_taxable_value: string;
+  readonly returns_taxable_value: string;
+}
+
+export interface GstHsnRow {
+  readonly hsn_code: string;
+  readonly description: string;
+  /** Unit quantity code, e.g. NOS or KGS. */
+  readonly uqc: string;
+  readonly quantity: string;
+  readonly total_value: string;
+  readonly taxable_value: string;
+  readonly igst: string;
+  readonly cgst: string;
+  readonly sgst: string;
+  readonly cess: string;
+  readonly gst_rate: string;
+}
+
+export interface GstDocumentRow {
+  readonly document_type: string;
+  readonly series: string;
+  readonly from: string;
+  readonly to: string;
+  readonly total: number;
+  readonly cancelled: number;
+}
+
+export interface GstRegister {
+  readonly date_from: string;
+  readonly date_to: string;
+  readonly branch_id: string | null;
+  readonly branch_count: number;
+  readonly rates: readonly GstRateRow[];
+  readonly hsn: readonly GstHsnRow[];
+  readonly documents: readonly GstDocumentRow[];
+  readonly totals: { readonly taxable_value: string; readonly cgst: string; readonly sgst: string; readonly igst: string; readonly total_tax: string };
+  /** Sold lines whose product has no HSN code. */
+  readonly missing_hsn_lines: number;
+}

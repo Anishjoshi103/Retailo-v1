@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { SessionContextService } from '../../core/auth/session-context.service';
 import { ReportsPage } from './reports.page';
@@ -45,11 +46,17 @@ describe('ReportsPage', () => {
     branchId = signal<string | null>('b-1');
     TestBed.configureTestingModule({
       imports: [ReportsPage],
-      providers: [{ provide: ReportsApi, useValue: api }, { provide: SessionContextService, useValue: { selectedBranchId: branchId } }],
+      providers: [provideRouter([]), { provide: ReportsApi, useValue: api }, { provide: SessionContextService, useValue: { selectedBranchId: branchId } }],
     });
   });
 
   afterEach(() => vi.useRealTimers());
+
+  it('links to the GST register', () => {
+    create();
+    const hrefs = Array.from(element().querySelectorAll('nav.tabs a')).map((a) => a.getAttribute('href'));
+    expect(hrefs).toEqual(['/reports', '/reports/gst']);
+  });
 
   it('loads today for the selected branch and leaves "today" to the server', () => {
     create();
