@@ -89,6 +89,8 @@ test('owner can configure GST, create product, receive stock, split-pay sale, re
   // Return part of the invoice; the application issues a cash-refund credit note.
   await page.getByRole('link', { name: 'Return items' }).click();
   await page.getByLabel('Quantity of ' + productName + ' to return').fill('1');
+  await page.getByLabel('Reason for the return').fill('Damaged');
+  await expect(page.getByRole('button', { name: 'Issue credit note' })).toBeEnabled();
   await page.getByRole('button', { name: 'Issue credit note' }).click();
   await expect(page).toHaveURL(/\/gst\/credit-notes\//);
   await expect(page.getByText('CREDIT NOTE', { exact: true })).toBeVisible();
