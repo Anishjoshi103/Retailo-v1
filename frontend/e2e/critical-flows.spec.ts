@@ -63,7 +63,7 @@ test('owner can configure GST, create product, receive stock, split-pay sale, re
   await page.goto('/pos');
   await page.getByPlaceholder('Barcode, SKU or name').fill(productSku);
   await page.getByRole('button', { name: 'Find' }).click();
-  await expect(page.getByText(productName)).toBeVisible();
+  await expect(page.getByText(productName, { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   const paymentRows = page.locator('.payment-row');
   await page.getByRole('button', { name: /Split payment/i }).click();
