@@ -111,6 +111,6 @@ test('owner can configure GST, create product, receive stock, split-pay sale, re
   await page.getByLabel('Name (optional)').fill('E2E Cashier');
   await page.getByLabel('Role').selectOption('cashier');
   await page.locator('fieldset.branches').getByText('Main Store').click();
-  await page.getByRole('button', { name: 'Send invitation' }).click();
-  await expect(page.getByText(/e2e-cashier@example\.test/)).toBeVisible();
+  await page.getByRole('button', { name: 'Send invitation', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Invitation sent to e2e-cashier@example.test');
 });
