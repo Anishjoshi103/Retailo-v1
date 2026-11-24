@@ -1,5 +1,8 @@
 import importlib
+import importlib.util
 import os
+import sys
+from pathlib import Path
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -12,37 +15,38 @@ class ProductionSettingsTests(TestCase):
             "REDIS_URL": "rediss://retailo:secret@redis.example.com:6380/2",
             **overrides,
         }
-        with patch.dict(os.environ, environment, clear=True):
-            import config.settings.base as base
-            import config.settings.production as production
 
-            # Settings modules use "from .base import *"; reload base under the
-            # test environment before importing production settings.
-            importlib.reload(base)
-            try:
-                return importlib.reload(production)
-            finally:
-                # Restore the base module for the rest of the test process.
+        # The Django test runner imports config.settings.ci first, which also
+        # imports config.settings.base. Reload base inside the patched
+        # environment, then execute production.py under an isolated module name
+        # so no cached production settings can leak between test cases.
+        import config.settings.base as base
+
+        try:
+            with patch.dict(os.environ, environment, clear=True):
                 importlib.reload(base)
+
+                module_name = "config.settings._production_settings_test"
+                settings_path = Path(__file__).parent / "settings" / "production.py"
+                spec = importlib.util.spec_from_file_location(module_name, settings_path)
+                if spec is None or spec.loader is None:
+                    self.fail("Could not load production settings module.")
+
+                production = importlib.util.module_from_spec(spec)
+                sys.modules[module_name] = production
+                try:
+                    spec.loader.exec_module(production)
+                finally:
+                    sys.modules.pop(module_name, None)
+
+                return production
+        finally:
+            # Restore the base settings module after the environment is restored.
+            importlib.reload(base)
 
     def test_production_requires_a_shared_redis_cache(self):
-        with patch.dict(
-            os.environ,
-            {
-                "DJANGO_SECRET_KEY": "production-test-secret",
-                "DJANGO_ALLOWED_HOSTS": "retailo.example.com",
-            },
-            clear=True,
-        ):
-            import config.settings.base as base
-            import config.settings.production as production
-
-            importlib.reload(base)
-            try:
-                with self.assertRaisesRegex(RuntimeError, "REDIS_URL"):
-                    importlib.reload(production)
-            finally:
-                importlib.reload(base)
+        with self.assertRaisesRegex(RuntimeError, "REDIS_URL"):
+            self.load_production_settings(REDIS_URL="")
 
     def test_production_uses_redis_for_throttle_counters(self):
         production = self.load_production_settings()
