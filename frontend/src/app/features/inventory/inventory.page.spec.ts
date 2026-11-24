@@ -55,7 +55,7 @@ describe('InventoryPage', () => {
 
   it('loads this branch\'s stock sorted by name and flags out-of-stock and below-zero products', () => {
     create();
-    expect(api.balances).toHaveBeenCalledWith('b-1');
+    expect(api.balances).toHaveBeenCalledWith('b-1', 50, 0, '', false);
     expect(page.rows().map((r) => r.balance.product_name)).toEqual(['Oil', 'Rice', 'Soap']);
     expect(text()).toContain('10.000');
     expect(text()).toContain('-2.000');
@@ -90,7 +90,7 @@ describe('InventoryPage', () => {
     api.balances.mockClear();
     branchId.set('b-2');
     refresh();
-    expect(api.balances).toHaveBeenCalledWith('b-2');
+    expect(api.balances).toHaveBeenCalledWith('b-2', 50, 0, '', false);
     api.balances.mockClear();
     branchId.set(null);
     refresh();
@@ -115,7 +115,7 @@ describe('InventoryPage', () => {
     roles.set(['cashier']);
     refresh();
     expect(text()).not.toContain('Add stock for another product');
-    expect(element().querySelectorAll('button.secondary').length).toBe(0);
+    expect(Array.from(element().querySelectorAll('button')).some((button) => button.textContent?.trim() === 'Adjust')).toBe(false);
     roles.set(['accountant']);
     refresh();
     expect(page.canAdjust()).toBe(false);
