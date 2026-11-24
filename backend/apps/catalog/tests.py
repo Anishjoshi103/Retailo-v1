@@ -257,10 +257,8 @@ class CatalogApiTests(TestCase):
                 self.assertEqual(response.status_code, 200, response.content)
 
     def test_product_list_paginates_and_validates_page_size(self):
-        products = [
+        for index in range(55):
             self.product(sku=f"PAGE-{index:03d}")
-            for index in range(55)
-        ]
         first = self.client.get("/api/v1/products", {"limit": 50})
         second = self.client.get("/api/v1/products", {"limit": 50, "offset": 50})
         self.assertEqual(first.status_code, 200, first.content)
