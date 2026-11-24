@@ -44,7 +44,7 @@ describe('SuppliersPage', () => {
 
   it('lists suppliers with their details and marks inactive ones', () => {
     create();
-    expect(api.suppliers).toHaveBeenCalledWith({});
+    expect(api.suppliers).toHaveBeenCalledWith({ limit: 50, offset: 0 });
     expect(text()).toContain('Agro Foods');
     expect(text()).toContain(GSTIN);
     expect(text()).toContain('No GSTIN');
@@ -58,9 +58,9 @@ describe('SuppliersPage', () => {
     page.search.set('  agro ');
     api.suppliers.mockClear();
     page.load();
-    expect(api.suppliers).toHaveBeenCalledWith({ search: 'agro' });
+    expect(api.suppliers).toHaveBeenCalledWith({ search: 'agro', limit: 50, offset: 0 });
     page.setFilter('active');
-    expect(api.suppliers).toHaveBeenLastCalledWith({ search: 'agro', active: true });
+    expect(api.suppliers).toHaveBeenLastCalledWith({ search: 'agro', active: true, limit: 50, offset: 0 });
   });
 
   it('shows empty and error states', () => {
