@@ -148,7 +148,8 @@ class StaffListCreateView(APIView):
             Membership.objects.filter(tenant_id=actor.tenant_id)
             .select_related("user").prefetch_related(_active_grants(actor.tenant_id)).order_by("created_at", "id")
         )
-        return Response([_serialize_member(member, actor) for member in members])
+        start, stop = page_bounds(request.query_params)
+        return Response([_serialize_member(member, actor) for member in members[start:stop]])
 
     def post(self, request):
         actor = require_membership_role(request, STAFF_MANAGERS, "Store administrator permissions are required to manage staff.")
