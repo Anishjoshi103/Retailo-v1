@@ -76,8 +76,7 @@ export class InventoryPage {
   readonly visibleRows = computed(() => {
     const text = this.search().trim().toLowerCase();
     return this.rows().filter((row) =>
-      (this.filter() === 'all' || row.status !== 'ok')
-      && (!text || row.balance.product_name.toLowerCase().includes(text) || row.balance.product_sku.toLowerCase().includes(text)));
+      !text || row.balance.product_name.toLowerCase().includes(text) || row.balance.product_sku.toLowerCase().includes(text));
   });
 
   // Adjusting
@@ -138,13 +137,15 @@ export class InventoryPage {
     if (!branchId) { this.balances.set([]); this.loading.set(false); return; }
     this.loading.set(true);
     this.loadError.set('');
-    this.inventoryApi.balances(branchId, this.pageSize, this.pageOffset(), this.search()).subscribe({
+    this.inventoryApi.balances(branchId, this.pageSize, this.pageOffset(), this.search(), this.filter() === 'attention').subscribe({
       next: (balances) => { this.balances.set(balances); this.hasNextPage.set(balances.length === this.pageSize); this.loading.set(false); },
       error: () => { this.loadError.set('We could not load your stock. Check your connection and try again.'); this.loading.set(false); },
     });
   }
 
   submitSearch(): void { this.pageOffset.set(0); this.load(); }
+
+  setFilter(filter: Filter): void { this.filter.set(filter); this.pageOffset.set(0); this.load(); }
 
   previousPage(): void { this.pageOffset.update((offset) => Math.max(0, offset - this.pageSize)); this.load(); }
 
