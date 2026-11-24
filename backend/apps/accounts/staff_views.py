@@ -25,6 +25,7 @@ from rest_framework.views import APIView
 from apps.accounts.throttles import StaffInviteThrottle
 from apps.accounts.views import _frontend_url, _send_account_email
 from apps.tenancy.access import authorized_branches
+from apps.tenancy.listing import page_bounds
 from apps.tenancy.models import BranchAccess, Membership
 from apps.tenancy.permissions import require_membership_role
 
