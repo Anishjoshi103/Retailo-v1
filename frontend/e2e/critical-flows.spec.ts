@@ -89,7 +89,7 @@ test('owner can configure GST, create product, receive stock, split-pay sale, re
   await page.getByRole('link', { name: 'Return items' }).click();
   await page.getByLabel('Quantity of ' + productName + ' to return').fill('1');
   await page.getByRole('button', { name: 'Issue credit note' }).click();
-  await expect(page.getByText(/Credit note issued|Return complete|Credit note/).first()).toBeVisible();
+  await expect(page).toHaveURL(/\\/gst\\/credit-notes\\//);\n  await expect(page.getByRole('heading', { name: /CN-/ })).toBeVisible();
 
   // Reports render and CSV export produces a downloadable file.
   await page.goto('/reports/gst');
