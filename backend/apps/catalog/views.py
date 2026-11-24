@@ -1,5 +1,6 @@
 from rest_framework import generics, permissions
 
+from apps.tenancy.listing import page_bounds
 from apps.tenancy.permissions import active_tenant_membership, require_membership_role
 
 from .models import Product
