@@ -2,6 +2,7 @@ from django.db import IntegrityError, transaction
 from rest_framework import generics, permissions, serializers
 from rest_framework.exceptions import NotFound
 
+from apps.tenancy.listing import page_bounds
 from apps.tenancy.permissions import active_tenant_membership, require_membership_role
 
 from .models import Supplier
