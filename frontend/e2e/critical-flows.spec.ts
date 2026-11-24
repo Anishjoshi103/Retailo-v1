@@ -52,7 +52,8 @@ test('owner can configure GST, create product, receive stock, split-pay sale, re
   await page.getByLabel('Saved supplier').selectOption({ label: 'Demo Wholesale Supplier' });
   await page.getByPlaceholder('Barcode, SKU or name').fill(productSku);
   await page.getByRole('button', { name: 'Find' }).click();
-  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  // Exact SKU matches are added directly by the receive-goods search flow.
+  await expect(page.getByLabel('Quantity of ' + productName)).toBeVisible();
   await page.getByLabel('Quantity of ' + productName).fill('10');
   await page.getByLabel('Cost per unit of ' + productName).fill('70.00');
   await page.getByRole('button', { name: 'Receive goods' }).click();
