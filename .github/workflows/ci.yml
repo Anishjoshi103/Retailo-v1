@@ -271,6 +271,14 @@ jobs:
           CI: "true"
         run: npx playwright test
 
+      - name: Show API and frontend logs after E2E
+        if: always()
+        run: |
+          echo "===== Django API log ====="
+          tail -n 300 /tmp/retailo-api.log || true
+          echo "===== Angular frontend log ====="
+          tail -n 100 /tmp/retailo-frontend.log || true
+
       - name: Upload Playwright report and traces
         if: always()
         uses: actions/upload-artifact@v4
