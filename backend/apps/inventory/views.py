@@ -35,6 +35,8 @@ class InventoryBalanceListView(generics.ListAPIView):
         search = self.request.query_params.get("search", "").strip()
         if search:
             queryset = queryset.filter(Q(product__name__icontains=search) | Q(product__sku__icontains=search))
+        if self.request.query_params.get("attention") == "true":
+            queryset = queryset.filter(quantity_on_hand__lte=0)
         queryset = queryset.order_by("branch__name", "product__name", "id")
         start, stop = page_bounds(self.request.query_params)
         return queryset[start:stop]
