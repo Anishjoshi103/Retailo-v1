@@ -63,8 +63,8 @@ test('owner can configure GST, create product, receive stock, split-pay sale, re
   await page.goto('/pos');
   await page.getByPlaceholder('Barcode, SKU or name').fill(productSku);
   await page.getByRole('button', { name: 'Find' }).click();
-  await expect(page.getByText(productName, { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  // Exact SKU matches are added directly to the POS cart by the search flow.
+  await expect(page.getByLabel('Quantity of ' + productName)).toBeVisible();
   const paymentRows = page.locator('.payment-row');
   await page.getByRole('button', { name: /Split payment/i }).click();
   await expect(paymentRows).toHaveCount(2);
