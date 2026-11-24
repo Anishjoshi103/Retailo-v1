@@ -234,3 +234,18 @@ class StaffManagementTests(TestCase):
         _, member, _ = self.person("cashier", [self.main])
         _, _, manager_client = self.person("manager", [self.main])
         self.assertEqual(manager_client.patch(f"/api/v1/staff/{member.id}", {"is_active": False}, format="json").status_code, 403)
+
+    def test_staff_list_paginates_and_validates_page_size(self):
+        for index in range(55):
+            email = f"page-{index:03d}@example.test"
+            user = get_user_model().objects.create_user(username=email, email=email, password=PASSWORD)
+            Membership.objects.create(tenant=self.tenant, user=user, role="cashier")
+        first = self.owner_client.get("/api/v1/staff", {"limit": 50})
+        second = self.owner_client.get("/api/v1/staff", {"limit": 50, "offset": 50})
+        self.assertEqual(first.status_code, 200, first.content)
+        self.assertEqual(second.status_code, 200, second.content)
+        self.assertEqual((len(first.json()), len(second.json())), (50, 6))
+        self.assertEqual(len({item["id"] for item in first.json() + second.json()}), 56)
+        self.assertEqual(self.owner_client.get("/api/v1/staff", {"limit": 0}).status_code, 400)
+        self.assertEqual(self.owner_client.get("/api/v1/staff", {"limit": 201}).status_code, 400)
+
