@@ -7,6 +7,6 @@ from .ci import *  # noqa: F403
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": Path(__file__).resolve().parents[3] / ".e2e.sqlite3",
+        "NAME": str(Path(__file__).resolve().parents[3] / ".e2e.sqlite3"),
     }
 }
