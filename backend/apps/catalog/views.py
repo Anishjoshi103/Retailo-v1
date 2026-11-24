@@ -20,7 +20,9 @@ class ProductListCreateView(generics.ListCreateAPIView):
             queryset = queryset.filter(Q(name__icontains=search) | Q(sku__icontains=search) | Q(barcode__icontains=search))
         if self.request.query_params.get("active") == "true":
             queryset = queryset.filter(is_active=True)
-        return queryset
+        queryset = queryset.order_by("name", "id")
+        start, stop = page_bounds(self.request.query_params)
+        return queryset[start:stop]
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
