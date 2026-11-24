@@ -71,3 +71,6 @@ The following routes intentionally use public authentication flows rather than t
 ## Coverage notes
 
 The role matrix is backed by endpoint tests for product create/list, inventory adjustment/balance list, supplier create/list, purchase receipt create, and purchase return create. Branch access and cross-tenant rejection are covered by endpoint-specific tests. Public authentication routes have separate authentication-flow tests.
+## List pagination
+
+`GET /api/v1/products`, `/api/v1/inventory/balances`, `/api/v1/inventory/suppliers`, and `/api/v1/staff` accept `limit` and `offset` query parameters. The default limit is 50, the maximum is 200, and offset defaults to 0. Invalid, zero, or over-limit page sizes return a validation error. Results are ordered deterministically; existing tenant and branch authorization filters are applied before slicing. The response remains a JSON array for backward compatibility. Clients can request the next page by increasing `offset` by `limit`.
