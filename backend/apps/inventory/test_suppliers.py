@@ -115,3 +115,16 @@ class SupplierApiTests(TestCase):
                 self.membership.save(update_fields=["role"])
                 response = self.client.get("/api/v1/inventory/suppliers")
                 self.assertEqual(response.status_code, 200, response.content)
+
+    def test_supplier_list_paginates_and_validates_page_size(self):
+        for index in range(55):
+            Supplier.objects.create(tenant=self.tenant, name=f"Supplier {index:03d}")
+        first = self.client.get("/api/v1/inventory/suppliers", {"limit": 50})
+        second = self.client.get("/api/v1/inventory/suppliers", {"limit": 50, "offset": 50})
+        self.assertEqual(first.status_code, 200, first.content)
+        self.assertEqual(second.status_code, 200, second.content)
+        self.assertEqual((len(first.json()), len(second.json())), (50, 5))
+        self.assertEqual(len({item["id"] for item in first.json() + second.json()}), 55)
+        self.assertEqual(self.client.get("/api/v1/inventory/suppliers", {"limit": 0}).status_code, 400)
+        self.assertEqual(self.client.get("/api/v1/inventory/suppliers", {"limit": 201}).status_code, 400)
+
