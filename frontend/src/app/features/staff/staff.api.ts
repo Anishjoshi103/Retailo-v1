@@ -1,3 +1,4 @@
+import { HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiClient } from '../../core/api/api-client.service';
@@ -7,8 +8,9 @@ import { InvitedStaffMember, InviteStaffRequest, StaffMember, UpdateStaffRequest
 export class StaffApi {
   private readonly api = inject(ApiClient);
 
-  list(): Observable<readonly StaffMember[]> {
-    return this.api.get<readonly StaffMember[]>('staff');
+  list(limit = 50, offset = 0): Observable<readonly StaffMember[]> {
+    const params = new HttpParams().set('limit', String(limit)).set('offset', String(offset));
+    return this.api.get<readonly StaffMember[]>('staff', { params });
   }
 
   invite(request: InviteStaffRequest): Observable<InvitedStaffMember> {
