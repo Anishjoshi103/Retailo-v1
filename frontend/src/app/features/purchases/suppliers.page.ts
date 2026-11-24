@@ -28,6 +28,9 @@ export class SuppliersPage {
   readonly loadError = signal('');
   readonly search = signal('');
   readonly filter = signal<ActiveFilter>('all');
+  readonly pageOffset = signal(0);
+  readonly pageSize = 50;
+  readonly hasNextPage = signal(false);
 
   readonly canCreate = computed(() => this.session.roles().some((role) => CREATING_ROLES.includes(role)));
 
@@ -76,16 +79,25 @@ export class SuppliersPage {
     this.purchasesApi.suppliers({
       ...(this.search().trim() ? { search: this.search().trim() } : {}),
       ...(this.filter() === 'active' ? { active: true } : {}),
+      limit: this.pageSize,
+      offset: this.pageOffset(),
     }).subscribe({
-      next: (suppliers) => { this.suppliers.set(suppliers); this.loading.set(false); },
+      next: (suppliers) => { this.suppliers.set(suppliers); this.hasNextPage.set(suppliers.length === this.pageSize); this.loading.set(false); },
       error: () => { this.loadError.set('We could not load your suppliers. Check your connection and try again.'); this.loading.set(false); },
     });
   }
 
   setFilter(filter: ActiveFilter): void {
     this.filter.set(filter);
+    this.pageOffset.set(0);
     this.load();
   }
+
+  submitSearch(): void { this.pageOffset.set(0); this.load(); }
+
+  previousPage(): void { this.pageOffset.update((offset) => Math.max(0, offset - this.pageSize)); this.load(); }
+
+  nextPage(): void { if (!this.hasNextPage()) return; this.pageOffset.update((offset) => offset + this.pageSize); this.load(); }
 
   openForm(): void {
     this.formOpen.set(true);
