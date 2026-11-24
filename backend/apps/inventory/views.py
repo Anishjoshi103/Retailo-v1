@@ -1,5 +1,5 @@
 from django.db import IntegrityError, transaction
-from django.db.models import F
+from django.db.models import F, Q
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import APIException, PermissionDenied
 from rest_framework.response import Response
@@ -32,6 +32,9 @@ class InventoryBalanceListView(generics.ListAPIView):
             queryset = queryset.filter(branch_id=branch_id)
         if product_id:
             queryset = queryset.filter(product_id=product_id)
+        search = self.request.query_params.get("search", "").strip()
+        if search:
+            queryset = queryset.filter(Q(product__name__icontains=search) | Q(product__sku__icontains=search))
         queryset = queryset.order_by("branch__name", "product__name", "id")
         start, stop = page_bounds(self.request.query_params)
         return queryset[start:stop]
