@@ -196,3 +196,96 @@ jobs:
       - name: Summarise SQL Server test failures
         if: failure()
         run: python scripts/summarize_test_failures.py test-output.log
+
+  frontend-e2e:
+    name: Playwright critical browser flows
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies and Playwright
+        working-directory: frontend
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test
+
+      - name: Install Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Migrate and seed isolated E2E database
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.ci_e2e
+          RETAILO_DEMO_PASSWORD: Retailo-E2E-Password-2026
+        run: |
+          python manage.py migrate --noinput
+          python manage.py seed_demo
+
+      - name: Start API and Angular development server
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.ci_e2e
+          RETAILO_DEMO_PASSWORD: Retailo-E2E-Password-2026
+        run: |
+          cd backend
+          python manage.py runserver 0.0.0.0:8000 > /tmp/retailo-api.log 2>&1 &
+          cd ../frontend
+          npm start -- --proxy-config proxy.conf.json > /tmp/retailo-frontend.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8000/api/v1/health >/dev/null && curl --fail --silent http://127.0.0.1:4200/auth/login >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/retailo-api.log
+          cat /tmp/retailo-frontend.log
+          exit 1
+
+      - name: Run Playwright critical flows
+        working-directory: frontend
+        env:
+          CI: "true"
+        run: npx playwright test
+
+      - name: Show API and frontend logs after E2E
+        if: always()
+        run: |
+          echo "===== Django API log ====="
+          tail -n 300 /tmp/retailo-api.log || true
+          echo "===== Angular frontend log ====="
+          tail -n 100 /tmp/retailo-frontend.log || true
+
+      - name: Upload Playwright report and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retailo-playwright-results
+          path: |
+            frontend/test-results/
+            frontend/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7

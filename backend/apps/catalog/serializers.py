@@ -26,6 +26,8 @@ class ProductSerializer(serializers.ModelSerializer):
         return value
 
     def validate_barcode(self, value):
+        if value is None:
+            return None
         value = value.strip() or None
         if value:
             qs = Product.objects.for_tenant(self.context["tenant_id"]).filter(barcode=value)
