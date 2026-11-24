@@ -13,9 +13,17 @@ class ProductionSettingsTests(TestCase):
             **overrides,
         }
         with patch.dict(os.environ, environment, clear=True):
+            import config.settings.base as base
             import config.settings.production as production
 
-            return importlib.reload(production)
+            # Settings modules use "from .base import *"; reload base under the
+            # test environment before importing production settings.
+            importlib.reload(base)
+            try:
+                return importlib.reload(production)
+            finally:
+                # Restore the base module for the rest of the test process.
+                importlib.reload(base)
 
     def test_production_requires_a_shared_redis_cache(self):
         with patch.dict(
@@ -26,10 +34,15 @@ class ProductionSettingsTests(TestCase):
             },
             clear=True,
         ):
-            with self.assertRaisesMessage(RuntimeError, "REDIS_URL"):
-                import config.settings.production as production
+            import config.settings.base as base
+            import config.settings.production as production
 
-                importlib.reload(production)
+            importlib.reload(base)
+            try:
+                with self.assertRaisesRegex(RuntimeError, "REDIS_URL"):
+                    importlib.reload(production)
+            finally:
+                importlib.reload(base)
 
     def test_production_uses_redis_for_throttle_counters(self):
         production = self.load_production_settings()
