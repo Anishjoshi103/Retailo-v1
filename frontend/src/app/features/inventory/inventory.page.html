@@ -111,8 +111,8 @@
       </label>
       <button type="submit" class="secondary">Search</button>
       <div class="filters" role="group" aria-label="Filter stock">
-        <button type="button" class="chip" [class.active]="filter() === 'all'" [attr.aria-pressed]="filter() === 'all'" (click)="filter.set('all')">All ({{ rows().length }})</button>
-        <button type="button" class="chip" [class.active]="filter() === 'attention'" [attr.aria-pressed]="filter() === 'attention'" (click)="filter.set('attention')">Out or below zero ({{ attentionCount() }})</button>
+        <button type="button" class="chip" [class.active]="filter() === 'all'" [attr.aria-pressed]="filter() === 'all'" (click)="setFilter('all')">All</button>
+        <button type="button" class="chip" [class.active]="filter() === 'attention'" [attr.aria-pressed]="filter() === 'attention'" (click)="setFilter('attention')">Out or below zero</button>
       </div>
     </form>
     @if (negativeCount() > 0) {
