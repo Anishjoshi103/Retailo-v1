@@ -25,7 +25,9 @@ class SupplierListCreateView(generics.ListCreateAPIView):
             queryset = queryset.filter(is_active=True)
         elif active == "false":
             queryset = queryset.filter(is_active=False)
-        return queryset
+        queryset = queryset.order_by("name", "id")
+        start, stop = page_bounds(self.request.query_params)
+        return queryset[start:stop]
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
