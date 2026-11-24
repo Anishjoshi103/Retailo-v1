@@ -65,7 +65,7 @@ test('owner can configure GST, create product, receive stock, split-pay sale, re
   await expect(page.getByText(productName)).toBeVisible();
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   const paymentRows = page.locator('.payment-row');
-  await page.getByRole('button', { name: /Add payment/i }).click();
+  await page.getByRole('button', { name: /Split payment/i }).click();
   await expect(paymentRows).toHaveCount(2);
   const firstPayment = paymentRows.nth(0);
   const secondPayment = paymentRows.nth(1);
@@ -95,6 +95,8 @@ test('owner can configure GST, create product, receive stock, split-pay sale, re
   await page.goto('/reports/gst');
   await expect(page.getByRole('heading', { name: 'GST register' })).toBeVisible();
   const csvDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'This month' }).click();
+  await expect(page.getByRole('button', { name: 'Download CSV' }).first()).toBeVisible();
   await page.getByRole('button', { name: 'Download CSV' }).first().click();
   const download = await csvDownload;
   expect(download.suggestedFilename()).toMatch(/\.csv$/);
@@ -104,7 +106,7 @@ test('owner can configure GST, create product, receive stock, split-pay sale, re
   await page.getByLabel('Email').fill('e2e-cashier@example.test');
   await page.getByLabel('Name (optional)').fill('E2E Cashier');
   await page.getByLabel('Role').selectOption('cashier');
-  await page.getByLabel('Branches').getByText('Main Store').click();
+  await page.locator('fieldset.branches').getByText('Main Store').click();
   await page.getByRole('button', { name: 'Send invitation' }).click();
   await expect(page.getByText(/e2e-cashier@example\.test/)).toBeVisible();
 });
