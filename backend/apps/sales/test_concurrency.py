@@ -76,7 +76,7 @@ class SalesConcurrencyTests(TransactionTestCase):
         refresh["membership_id"] = str(membership.id)
         self.access_token = str(refresh.access_token)
 
-    def client(self):
+    def api_client(self):
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
         return client
@@ -88,7 +88,7 @@ class SalesConcurrencyTests(TransactionTestCase):
         def post(request):
             close_old_connections()
             try:
-                client = self.client()
+                client = self.api_client()
                 barrier.wait(timeout=10)
                 response = client.post(
                     request["path"], request["body"], format="json",
@@ -130,7 +130,7 @@ class SalesConcurrencyTests(TransactionTestCase):
 
     def test_two_returns_cannot_return_the_same_sold_quantity_twice(self):
         seed = self.sale_request("seed-sale", "2")
-        sale_response = self.client().post(
+        sale_response = self.api_client().post(
             seed["path"], seed["body"], format="json", HTTP_IDEMPOTENCY_KEY=seed["key"],
         )
         self.assertEqual(sale_response.status_code, 201, sale_response.content)
