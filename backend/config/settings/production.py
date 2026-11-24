@@ -1,4 +1,5 @@
 import os
+from copy import deepcopy
 
 from .base import *  # noqa: F403
 
@@ -21,7 +22,9 @@ REDIS_URL = os.environ.get("REDIS_URL", "").strip()
 if not REDIS_URL:
     raise RuntimeError("REDIS_URL must be configured in production.")
 
-CACHES["throttle"] = {  # noqa: F405
+# Do not mutate the base settings cache dictionary when this module is imported.
+CACHES = deepcopy(CACHES)  # noqa: F405
+CACHES["throttle"] = {
     "BACKEND": "django.core.cache.backends.redis.RedisCache",
     "LOCATION": REDIS_URL,
     "KEY_PREFIX": os.environ.get("THROTTLE_CACHE_KEY_PREFIX", "retailo:throttle"),
