@@ -33,6 +33,8 @@ The API health endpoint is `http://localhost:8080/api/v1/health`; nginx health i
 local database tools. Do not expose this development database publicly.
 
 Useful commands: `make logs`, `make down`, `make migrate`, and `make test`.
+For an isolated sample store and demo-data walkthrough, see
+[`docs/demo-seed-and-local-runbook.md`](docs/demo-seed-and-local-runbook.md).
 To delete the local database volume, use `make clean-volumes` and confirm the prompt.
 This permanently removes local SQL Server data.
 
