@@ -32,7 +32,9 @@ class InventoryBalanceListView(generics.ListAPIView):
             queryset = queryset.filter(branch_id=branch_id)
         if product_id:
             queryset = queryset.filter(product_id=product_id)
-        return queryset
+        queryset = queryset.order_by("branch__name", "product__name", "id")
+        start, stop = page_bounds(self.request.query_params)
+        return queryset[start:stop]
 
 
 class StockAdjustmentView(APIView):
