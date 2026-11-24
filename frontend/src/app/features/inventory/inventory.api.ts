@@ -8,9 +8,10 @@ import { AdjustStockRequest, AdjustStockResult, ProductSummary, StockBalance } f
 export class InventoryApi {
   private readonly api = inject(ApiClient);
 
-  balances(branchId: string, limit = 50, offset = 0, search = ''): Observable<readonly StockBalance[]> {
+  balances(branchId: string, limit = 50, offset = 0, search = '', attention = false): Observable<readonly StockBalance[]> {
     let params = new HttpParams().set('branch_id', branchId).set('limit', String(limit)).set('offset', String(offset));
     if (search.trim()) params = params.set('search', search.trim());
+    if (attention) params = params.set('attention', 'true');
     return this.api.get<readonly StockBalance[]>('inventory/balances', { params });
   }
 
