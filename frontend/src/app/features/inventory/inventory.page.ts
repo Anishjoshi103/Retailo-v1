@@ -76,7 +76,8 @@ export class InventoryPage {
   readonly visibleRows = computed(() => {
     const text = this.search().trim().toLowerCase();
     return this.rows().filter((row) =>
-      !text || row.balance.product_name.toLowerCase().includes(text) || row.balance.product_sku.toLowerCase().includes(text));
+      (this.filter() === 'all' || row.status !== 'ok')
+      && (!text || row.balance.product_name.toLowerCase().includes(text) || row.balance.product_sku.toLowerCase().includes(text)));
   });
 
   // Adjusting
