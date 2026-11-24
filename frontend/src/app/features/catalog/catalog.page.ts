@@ -183,6 +183,14 @@ export class CatalogPage implements OnInit {
     return this.fieldErrors()[field]?.join(' ') ?? '';
   }
 
+  inputValue(event: Event): string {
+    return (event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value;
+  }
+
+  checkedValue(event: Event): boolean {
+    return (event.target as HTMLInputElement).checked;
+  }
+
   submitSearch(): void {
     this.loadProducts();
   }
