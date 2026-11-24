@@ -23,6 +23,8 @@ export interface CreateSupplierRequest {
 export interface SupplierListQuery {
   readonly search?: string;
   readonly active?: boolean;
+  readonly limit?: number;
+  readonly offset?: number;
 }
 
 export interface ReceiveGoodsLine {

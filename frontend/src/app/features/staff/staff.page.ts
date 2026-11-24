@@ -40,6 +40,9 @@ export class StaffPage {
   private readonly session = inject(SessionContextService);
 
   readonly members = signal<readonly StaffMember[]>([]);
+  readonly pageOffset = signal(0);
+  readonly pageSize = 50;
+  readonly hasNextPage = signal(false);
   readonly branches = signal<readonly BranchGst[]>([]);
   readonly loading = signal(true);
   readonly loadError = signal('');
@@ -76,8 +79,8 @@ export class StaffPage {
   load(): void {
     this.loading.set(true);
     this.loadError.set('');
-    forkJoin({ members: this.staffApi.list(), branches: this.branchesApi.list() }).subscribe({
-      next: ({ members, branches }) => { this.members.set(members); this.branches.set(branches); this.loading.set(false); },
+    forkJoin({ members: this.staffApi.list(this.pageSize, this.pageOffset()), branches: this.branchesApi.list() }).subscribe({
+      next: ({ members, branches }) => { this.members.set(members); this.hasNextPage.set(members.length === this.pageSize); this.branches.set(branches); this.loading.set(false); },
       error: (error: unknown) => {
         this.loadError.set(error instanceof ApiError && error.status === 403
           ? 'Only the store owner or an administrator can manage staff.'
@@ -86,6 +89,10 @@ export class StaffPage {
       },
     });
   }
+
+  previousPage(): void { this.pageOffset.update((offset) => Math.max(0, offset - this.pageSize)); this.load(); }
+
+  nextPage(): void { if (!this.hasNextPage()) return; this.pageOffset.update((offset) => offset + this.pageSize); this.load(); }
 
   branchNames(member: StaffMember): string {
     const names = this.branches().filter((branch) => member.branch_ids.includes(branch.id)).map((branch) => branch.name);
@@ -114,7 +121,7 @@ export class StaffPage {
         this.inviteEmail.set('');
         this.inviteName.set('');
         this.inviteBranchIds.set([]);
-        this.members.update((all) => [...all, created]);
+        if (this.pageOffset() === 0) this.members.update((all) => [...all, created].slice(0, this.pageSize));
         this.inviteMessage.set(created.invite_sent
           ? { kind: 'ok', text: `Invitation sent to ${created.email}. They can set a password from the link in the email.` }
           : { kind: 'warn', text: `${created.email} was added, but the invitation email could not be sent. Use Resend invitation to try again.` });

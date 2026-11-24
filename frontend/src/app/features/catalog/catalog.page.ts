@@ -66,6 +66,9 @@ export class CatalogPage implements OnInit {
   private readonly api = inject(ApiClient);
 
   readonly products = signal<readonly Product[]>([]);
+  readonly pageOffset = signal(0);
+  readonly pageSize = 50;
+  readonly hasNextPage = signal(false);
   readonly searchText = signal('');
   readonly activeFilter = signal<'all' | 'active'>('all');
   readonly loading = signal(false);
@@ -107,11 +110,12 @@ export class CatalogPage implements OnInit {
     const search = this.searchText().trim();
     if (search) params = params.set('search', search);
     if (this.activeFilter() === 'active') params = params.set('active', 'true');
+    params = params.set('limit', String(this.pageSize)).set('offset', String(this.pageOffset()));
 
     this.api.get<readonly Product[]>('products', { params })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (products) => this.products.set(products),
+        next: (products) => { this.products.set(products); this.hasNextPage.set(products.length === this.pageSize); },
         error: () => {
           this.products.set([]);
           this.errorMessage.set('We could not load products. Check your connection and try again.');
@@ -192,11 +196,24 @@ export class CatalogPage implements OnInit {
   }
 
   submitSearch(): void {
+    this.pageOffset.set(0);
+    this.loadProducts();
+  }
+
+  previousPage(): void {
+    this.pageOffset.update((offset) => Math.max(0, offset - this.pageSize));
+    this.loadProducts();
+  }
+
+  nextPage(): void {
+    if (!this.hasNextPage()) return;
+    this.pageOffset.update((offset) => offset + this.pageSize);
     this.loadProducts();
   }
 
   setActiveFilter(value: string): void {
     this.activeFilter.set(value === 'active' ? 'active' : 'all');
+    this.pageOffset.set(0);
     this.loadProducts();
   }
 

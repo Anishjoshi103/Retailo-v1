@@ -2,6 +2,7 @@ from django.db import IntegrityError, transaction
 from rest_framework import generics, permissions, serializers
 from rest_framework.exceptions import NotFound
 
+from apps.tenancy.listing import page_bounds
 from apps.tenancy.permissions import active_tenant_membership, require_membership_role
 
 from .models import Supplier
@@ -24,7 +25,9 @@ class SupplierListCreateView(generics.ListCreateAPIView):
             queryset = queryset.filter(is_active=True)
         elif active == "false":
             queryset = queryset.filter(is_active=False)
-        return queryset
+        queryset = queryset.order_by("name", "id")
+        start, stop = page_bounds(self.request.query_params)
+        return queryset[start:stop]
 
     def get_serializer_context(self):
         context = super().get_serializer_context()

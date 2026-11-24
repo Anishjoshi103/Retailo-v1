@@ -1,11 +1,12 @@
 from django.db import IntegrityError, transaction
-from django.db.models import F
+from django.db.models import F, Q
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import APIException, PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.tenancy.access import authorized_branches, membership_can_access_branch
+from apps.tenancy.listing import page_bounds
 from apps.tenancy.permissions import active_tenant_membership, require_membership_role
 
 from .models import InventoryBalance, StockMovement
@@ -31,7 +32,14 @@ class InventoryBalanceListView(generics.ListAPIView):
             queryset = queryset.filter(branch_id=branch_id)
         if product_id:
             queryset = queryset.filter(product_id=product_id)
-        return queryset
+        search = self.request.query_params.get("search", "").strip()
+        if search:
+            queryset = queryset.filter(Q(product__name__icontains=search) | Q(product__sku__icontains=search))
+        if self.request.query_params.get("attention") == "true":
+            queryset = queryset.filter(quantity_on_hand__lte=0)
+        queryset = queryset.order_by("branch__name", "product__name", "id")
+        start, stop = page_bounds(self.request.query_params)
+        return queryset[start:stop]
 
 
 class StockAdjustmentView(APIView):

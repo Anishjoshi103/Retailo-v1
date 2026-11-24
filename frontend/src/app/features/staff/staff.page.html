@@ -131,5 +131,10 @@
         </li>
       }
     </ul>
+    <nav class="pagination" aria-label="Staff pages">
+      <button type="button" class="secondary" [disabled]="loading() || pageOffset() === 0" (click)="previousPage()">Previous</button>
+      <span>Showing {{ pageOffset() + 1 }}–{{ pageOffset() + members().length }}</span>
+      <button type="button" class="secondary" [disabled]="loading() || !hasNextPage()" (click)="nextPage()">Next</button>
+    </nav>
   }
 </section>

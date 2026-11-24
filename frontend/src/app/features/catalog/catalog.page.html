@@ -90,7 +90,17 @@
             (change)="updateDraft('is_active', checkedValue($event))" />
           <span>Product is active and available for sale</span>
         </label>
-        <p class="tax-note">GST is calculated by the backend when an invoice is posted. This form only saves the product's GST rate and tax-inclusive prices.</p>
+        <nav class="pagination" aria-label="Product pages">
+    <button type="button" class="secondary" [disabled]="loading() || pageOffset() === 0" (click)="previousPage()">Previous</button>
+    <span>Showing {{ pageOffset() + 1 }}–{{ pageOffset() + products().length }}</span>
+    <button type="button" class="secondary" [disabled]="loading() || !hasNextPage()" (click)="nextPage()">Next</button>
+  </nav>
+  <nav class="pagination" aria-label="Product pages">
+    <button type="button" class="secondary" [disabled]="loading() || pageOffset() === 0" (click)="previousPage()">Previous</button>
+    <span>Showing {{ pageOffset() + 1 }}–{{ pageOffset() + products().length }}</span>
+    <button type="button" class="secondary" [disabled]="loading() || !hasNextPage()" (click)="nextPage()">Next</button>
+  </nav>
+  <p class="tax-note">GST is calculated by the backend when an invoice is posted. This form only saves the product's GST rate and tax-inclusive prices.</p>
         <div class="form-actions">
           <button class="secondary" type="button" (click)="closeCreateForm()" [disabled]="saving()">Cancel</button>
           <button class="primary" type="submit" [disabled]="!canCreate()">{{ saving() ? 'Saving…' : 'Save product' }}</button>

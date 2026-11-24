@@ -22,6 +22,8 @@ export class PurchasesApi {
     let params = new HttpParams();
     if (query.search) params = params.set('search', query.search);
     if (query.active !== undefined) params = params.set('active', String(query.active));
+    if (query.limit !== undefined) params = params.set('limit', String(query.limit));
+    if (query.offset !== undefined) params = params.set('offset', String(query.offset));
     return this.api.get<readonly Supplier[]>('inventory/suppliers', { params });
   }
 

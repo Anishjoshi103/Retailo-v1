@@ -60,7 +60,7 @@
     }
   }
 
-  <form class="toolbar" (submit)="$event.preventDefault(); load()">
+  <form class="toolbar" (submit)="$event.preventDefault(); submitSearch()">
     <label class="grow">
       <span class="sr-only">Search suppliers</span>
       <input type="search" autocomplete="off" placeholder="Search by name, GSTIN or phone" [value]="search()" (input)="search.set(inputValue($event))" />
@@ -160,5 +160,10 @@
         </li>
       }
     </ul>
+    <nav class="pagination" aria-label="Supplier pages">
+      <button type="button" class="secondary" [disabled]="loading() || pageOffset() === 0" (click)="previousPage()">Previous</button>
+      <span>Showing {{ pageOffset() + 1 }}–{{ pageOffset() + suppliers().length }}</span>
+      <button type="button" class="secondary" [disabled]="loading() || !hasNextPage()" (click)="nextPage()">Next</button>
+    </nav>
   }
 </section>

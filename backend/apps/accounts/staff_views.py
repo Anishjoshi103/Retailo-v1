@@ -25,6 +25,7 @@ from rest_framework.views import APIView
 from apps.accounts.throttles import StaffInviteThrottle
 from apps.accounts.views import _frontend_url, _send_account_email
 from apps.tenancy.access import authorized_branches
+from apps.tenancy.listing import page_bounds
 from apps.tenancy.models import BranchAccess, Membership
 from apps.tenancy.permissions import require_membership_role
 
@@ -147,7 +148,8 @@ class StaffListCreateView(APIView):
             Membership.objects.filter(tenant_id=actor.tenant_id)
             .select_related("user").prefetch_related(_active_grants(actor.tenant_id)).order_by("created_at", "id")
         )
-        return Response([_serialize_member(member, actor) for member in members])
+        start, stop = page_bounds(request.query_params)
+        return Response([_serialize_member(member, actor) for member in members[start:stop]])
 
     def post(self, request):
         actor = require_membership_role(request, STAFF_MANAGERS, "Store administrator permissions are required to manage staff.")

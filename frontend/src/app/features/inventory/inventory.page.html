@@ -104,16 +104,17 @@
       </div>
     }
 
-    <div class="toolbar">
+    <form class="toolbar" (submit)="$event.preventDefault(); submitSearch()">
       <label class="grow">
         <span class="sr-only">Search stock</span>
         <input type="search" autocomplete="off" placeholder="Search by name or SKU" [value]="search()" (input)="search.set(inputValue($event))" />
       </label>
+      <button type="submit" class="secondary">Search</button>
       <div class="filters" role="group" aria-label="Filter stock">
-        <button type="button" class="chip" [class.active]="filter() === 'all'" [attr.aria-pressed]="filter() === 'all'" (click)="filter.set('all')">All ({{ rows().length }})</button>
-        <button type="button" class="chip" [class.active]="filter() === 'attention'" [attr.aria-pressed]="filter() === 'attention'" (click)="filter.set('attention')">Out or below zero ({{ attentionCount() }})</button>
+        <button type="button" class="chip" [class.active]="filter() === 'all'" [attr.aria-pressed]="filter() === 'all'" (click)="setFilter('all')">All</button>
+        <button type="button" class="chip" [class.active]="filter() === 'attention'" [attr.aria-pressed]="filter() === 'attention'" (click)="setFilter('attention')">Out or below zero</button>
       </div>
-    </div>
+    </form>
     @if (negativeCount() > 0) {
       <p class="notice notice-warn" role="status">{{ negativeCount() }} product(s) are below zero, usually because a manager sold more than was recorded. Count them and adjust.</p>
     }
@@ -143,5 +144,10 @@
         }
       </ul>
     }
+    <nav class="pagination" aria-label="Stock pages">
+      <button type="button" class="secondary" [disabled]="loading() || pageOffset() === 0" (click)="previousPage()">Previous</button>
+      <span>Showing {{ pageOffset() + 1 }}–{{ pageOffset() + balances().length }}</span>
+      <button type="button" class="secondary" [disabled]="loading() || !hasNextPage()" (click)="nextPage()">Next</button>
+    </nav>
   }
 </section>

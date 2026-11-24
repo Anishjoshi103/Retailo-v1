@@ -55,6 +55,9 @@ export class InventoryPage {
   readonly loadError = signal('');
   readonly search = signal('');
   readonly filter = signal<Filter>('all');
+  readonly pageOffset = signal(0);
+  readonly pageSize = 50;
+  readonly hasNextPage = signal(false);
   readonly notice = signal('');
 
   readonly canAdjust = computed(() => this.session.roles().some((role) => ADJUSTING_ROLES.includes(role)));
@@ -135,11 +138,19 @@ export class InventoryPage {
     if (!branchId) { this.balances.set([]); this.loading.set(false); return; }
     this.loading.set(true);
     this.loadError.set('');
-    this.inventoryApi.balances(branchId).subscribe({
-      next: (balances) => { this.balances.set(balances); this.loading.set(false); },
+    this.inventoryApi.balances(branchId, this.pageSize, this.pageOffset(), this.search(), this.filter() === 'attention').subscribe({
+      next: (balances) => { this.balances.set(balances); this.hasNextPage.set(balances.length === this.pageSize); this.loading.set(false); },
       error: () => { this.loadError.set('We could not load your stock. Check your connection and try again.'); this.loading.set(false); },
     });
   }
+
+  submitSearch(): void { this.pageOffset.set(0); this.load(); }
+
+  setFilter(filter: Filter): void { this.filter.set(filter); this.pageOffset.set(0); this.load(); }
+
+  previousPage(): void { this.pageOffset.update((offset) => Math.max(0, offset - this.pageSize)); this.load(); }
+
+  nextPage(): void { if (!this.hasNextPage()) return; this.pageOffset.update((offset) => offset + this.pageSize); this.load(); }
 
   quantity(row: Row): string {
     return formatSignedQuantity(row.onHandMilli);
