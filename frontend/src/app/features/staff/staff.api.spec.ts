@@ -20,7 +20,7 @@ describe('StaffApi', () => {
 
   it('lists staff', () => {
     api.list().subscribe();
-    const request = http.expectOne('/api/v1/staff');
+    const request = http.expectOne('/api/v1/staff?limit=50&offset=0');
     expect(request.request.method).toBe('GET');
     request.flush([]);
   });
