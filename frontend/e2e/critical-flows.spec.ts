@@ -45,7 +45,7 @@ test('owner can configure GST, create product, receive stock, split-pay sale, re
   await page.getByLabel('Selling price (₹)').fill('100.00');
   await page.getByLabel('Purchase price (₹)').fill('70.00');
   await page.getByRole('button', { name: 'Save product' }).click();
-  await expect(page.getByText(productName)).toBeVisible();
+  await expect(page.getByText(productName, { exact: true })).toBeVisible();
 
   // Receive goods for the newly-created product.
   await page.goto('/purchases');
