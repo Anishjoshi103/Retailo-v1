@@ -9,7 +9,7 @@ from apps.sales.return_views import CreditNoteDetailView, CreditNoteListView, Sa
 from apps.sales.views import SaleDetailView, SaleListCreateView
 from apps.tenancy.branch_views import BranchDetailView
 
-from .health import health
+from .health import health, readiness
 
 urlpatterns = [
     path("api/v1/auth/", include("apps.accounts.urls")),
@@ -32,6 +32,7 @@ urlpatterns = [
     path("api/v1/inventory/", include("apps.inventory.supplier_urls")),
     path("api/v1/inventory/", include("apps.inventory.return_urls")),
     path("api/v1/health", health, name="health"),
+    path("api/v1/ready", readiness, name="readiness"),
     path("api/v1/schema/", SpectacularAPIView.as_view(), name="openapi-schema"),
     path("api/v1/docs/", SpectacularSwaggerView.as_view(url_name="openapi-schema"), name="api-docs"),
 ]
