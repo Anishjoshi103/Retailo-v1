@@ -1,6 +1,6 @@
 # Retailo self-hosted store server — pilot guide
 
-This is the end-to-end installation and operating guide for one Retailo store server. It is intentionally environment-driven: the API image is the same immutable GHCR image built by CI, and database/network/secret settings are supplied at runtime. No cloud-specific application code is required.
+This is the end-to-end installation and operating guide for one Retailo store server. See [deployment strategy](deployment-strategy.md) for the Phase 1 portable-hosting decision and the Phase 2 Azure design-only boundary. It is intentionally environment-driven: the API image is the same immutable GHCR image built by CI, and database/network/secret settings are supplied at runtime. No cloud-specific application code is required.
 
 The deployment is a single-server pilot, not a high-availability architecture. A server, SSD, UPS, or store-network failure can interrupt POS operations. Backups and tested recovery are mandatory before the store goes live.
 
