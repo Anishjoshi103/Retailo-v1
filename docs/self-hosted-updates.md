@@ -26,7 +26,7 @@ Do not use a floating `:latest`, major, or minor tag for a production update.
 Run from the deployment checkout. The backup script requires the external drive and encrypted offsite remote to be configured. Use local environment variables or the protected operations environment file; never put credentials on the command line.
 
 ```sh
-sudo env EXTERNAL_BACKUP_DIR=/mnt/retailo-backup RCLONE_REMOTE=retailo-offsite:/ \
+sudo env EXTERNAL_BACKUP_DIR=/mnt/retailo-backup RCLONE_REMOTE=retailo-offsite:store-001 \
   bash scripts/self-hosted/update.sh \
   'ghcr.io/anishjoshi103/retailo-api:sha-COMMIT@sha256:FULL_64_CHARACTER_DIGEST'
 ```

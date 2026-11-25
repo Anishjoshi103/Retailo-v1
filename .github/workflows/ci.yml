@@ -306,3 +306,25 @@ jobs:
           tags: retailo-api:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+  self-hosted-deployment:
+    name: Self-hosted deployment config and scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends shellcheck
+
+      - name: Check operational shell scripts
+        run: |
+          bash -n scripts/self-hosted/*.sh
+          shellcheck --severity=warning scripts/self-hosted/*.sh
+
+      - name: Validate production Compose configuration
+        run: |
+          cp .env.prod.example .env.prod
+          docker compose --env-file .env.prod -f docker-compose.prod.yml config --quiet

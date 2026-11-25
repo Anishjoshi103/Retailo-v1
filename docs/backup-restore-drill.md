@@ -63,7 +63,7 @@ Add only non-secret operational paths:
 
 ```ini
 EXTERNAL_BACKUP_DIR=/mnt/retailo-backup
-RCLONE_REMOTE=retailo-offsite:/
+RCLONE_REMOTE=retailo-offsite:store-001
 DATABASE_NAME=Retailo
 ```
 
@@ -74,7 +74,7 @@ The rclone crypt password is held by rclone's protected configuration, not this 
 From the deployment checkout:
 
 ```sh
-sudo EXTERNAL_BACKUP_DIR=/mnt/retailo-backup RCLONE_REMOTE=retailo-offsite:/ scripts/self-hosted/backup.sh
+sudo EXTERNAL_BACKUP_DIR=/mnt/retailo-backup RCLONE_REMOTE=retailo-offsite:store-001 scripts/self-hosted/backup.sh
 ```
 
 For routine operation, use the protected `/etc/retailo/backup.env` through systemd below. Check that the output lists all three copies and ends with `BACKUP_OK`. Confirm the file exists on the external drive and the encrypted remote.

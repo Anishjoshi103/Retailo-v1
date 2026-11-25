@@ -28,8 +28,21 @@ Restrict SSH to the administrator subnet or management VLAN. If using a differen
 Caddy uses its internal CA for `https://retailo.lan`. This provides HTTPS on the local network without purchasing a public domain.
 
 1. Start the proxy and allow Caddy to initialize its CA.
-2. Export only the CA root certificate from Caddy's persistent data volume using an administrator-controlled process. Do not copy or distribute the CA private key.
-3. Install the root certificate into the trusted root store of every managed POS browser/device.
+2. Export only the CA root certificate from Caddy's persistent data volume:
+
+   ```sh
+   sudo docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T proxy cat /data/caddy/pki/authorities/local/root.crt > /tmp/retailo-local-root.crt
+   ```
+
+   Do not copy or distribute the CA private key.
+3. Install the root certificate into the trusted root store of every managed POS browser/device. For a Linux POS:
+
+   ```sh
+   sudo install -m 0644 /tmp/retailo-local-root.crt /usr/local/share/ca-certificates/retailo-local.crt
+   sudo update-ca-certificates
+   ```
+
+   For Windows, run an elevated terminal: `certutil -addstore -f Root retailo-local-root.crt`. For macOS: `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain retailo-local-root.crt`. Use the OS/browser vendor's managed certificate deployment for fleets.
 4. Confirm the browser shows a valid certificate for the exact `RETAILO_HOSTNAME` and that login/session cookies work over HTTPS.
 5. Keep the Caddy data volume in backups; losing it can require re-trusting a newly generated local CA.
 
@@ -39,7 +52,7 @@ If using a public domain instead, configure Caddy with a real domain and a valid
 
 Tailscale runs on the store-server host, not as a cloud-specific application dependency. It establishes an outbound encrypted tailnet connection; no inbound router port forwarding is needed. The host-only Caddy origin at `127.0.0.1:8080` is the upstream. Tailscale Serve provides HTTPS with a tailnet certificate to authorized tailnet users.
 
-Install Tailscale using the official installation instructions for the selected Linux distribution, then authenticate locally on the store server. Do not put an auth key in this repository or paste it into chat.
+Install Tailscale using the [official Linux installation instructions](https://tailscale.com/kb/1031/install-linux/) for the selected distribution, then authenticate locally on the store server. Do not put an auth key in this repository or paste it into chat.
 
 ```sh
 sudo tailscale up
