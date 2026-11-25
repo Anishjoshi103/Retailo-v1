@@ -41,4 +41,4 @@ This permanently removes local SQL Server data.
 Never commit `.env`, access tokens, or real credentials. Production database and
 secret configuration must be managed outside this development Compose stack.
 
-For the store-server pilot deployment, see the [self-hosting guide](docs/self-hosting.md), [network/access setup](docs/self-hosted-network-access.md), and [backup/restore runbook](docs/backup-restore-drill.md).
+For the store-server pilot deployment, see the [self-hosting guide](docs/self-hosting.md), [deployment strategy](docs/deployment-strategy.md), [network/access setup](docs/self-hosted-network-access.md), and [backup/restore runbook](docs/backup-restore-drill.md).
