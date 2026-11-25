@@ -1,0 +1,24 @@
+{
+    admin off
+    auto_https disable_redirects
+}
+
+https://{$RETAILO_HOSTNAME:retailo.lan} {
+    tls internal
+
+    encode zstd gzip
+
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "same-origin"
+        X-Frame-Options "DENY"
+        -Server
+    }
+
+    reverse_proxy api:8000 {
+        header_up X-Forwarded-Proto https
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+    }
+}
