@@ -62,6 +62,8 @@ services:
       TRUSTED_PROXY_COUNT: "1"
       TRUST_PROXY_SSL_HEADER: "true"
       SECURE_SSL_REDIRECT: "true"
+      # SQL Server container uses its generated certificate on the private Docker data network.
+      DATABASE_EXTRA_PARAMS: "TrustServerCertificate=yes"
     depends_on:
       db:
         condition: service_healthy
@@ -127,7 +129,7 @@ services:
 
 networks:
   edge:
-    internal: true
+    # API needs outbound access for configured email delivery; only Caddy publishes a LAN-bound port.
   data:
     internal: true
 
