@@ -22,3 +22,14 @@ https://{$RETAILO_HOSTNAME:retailo.lan} {
         header_up X-Forwarded-For {remote_host}
     }
 }
+
+# Host-loopback-only HTTP listener. The host Tailscale Serve process terminates
+# tailnet HTTPS and forwards to this origin; Docker publishes it only on 127.0.0.1.
+http://:8080 {
+    encode zstd gzip
+    reverse_proxy api:8000 {
+        header_up X-Forwarded-Proto https
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+    }
+}
