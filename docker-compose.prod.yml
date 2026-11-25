@@ -28,7 +28,7 @@ services:
 
   redis:
     image: ${REDIS_IMAGE:?Set REDIS_IMAGE to a Redis image pinned by sha256 digest}
-    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000", "--maxmemory", "${REDIS_MAXMEMORY:-128mb}", "--maxmemory-policy", "allkeys-lru"]
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000", "--maxmemory", "${REDIS_MAXMEMORY:-128mb}", "--maxmemory-policy", "noeviction"]
     volumes:
       - retailo_redis_data:/data
     networks:
@@ -83,7 +83,7 @@ services:
     cap_drop:
       - ALL
     healthcheck:
-      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/api/v1/ready', timeout=5)"]
+      test: ["CMD", "python", "-c", "from urllib.request import Request, urlopen; urlopen(Request('http://127.0.0.1:8000/api/v1/ready', headers={'X-Forwarded-Proto': 'https'}), timeout=5)"]
       interval: 15s
       timeout: 8s
       retries: 5
@@ -96,6 +96,8 @@ services:
 
   proxy:
     image: ${CADDY_IMAGE:?Set CADDY_IMAGE to a Caddy image pinned by sha256 digest}
+    environment:
+      RETAILO_HOSTNAME: ${RETAILO_HOSTNAME:-retailo.lan}
     ports:
       - "${LAN_BIND_IP:?Set LAN_BIND_IP to the store server's LAN IPv4 address}:443:443"
     volumes:
@@ -116,7 +118,7 @@ services:
     cap_add:
       - NET_BIND_SERVICE
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null --no-check-certificate https://127.0.0.1/api/v1/health"]
+      test: ["CMD-SHELL", "wget -q --header='Host: ${RETAILO_HOSTNAME:-retailo.lan}' -O /dev/null --no-check-certificate https://127.0.0.1/api/v1/health"]
       interval: 15s
       timeout: 5s
       retries: 5
