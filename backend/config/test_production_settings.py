@@ -12,6 +12,7 @@ class ProductionSettingsTests(TestCase):
         environment = {
             "DJANGO_SECRET_KEY": "production-test-secret",
             "DJANGO_ALLOWED_HOSTS": "retailo.example.com",
+            "DJANGO_CSRF_TRUSTED_ORIGINS": "https://retailo.example.com",
             "REDIS_URL": "rediss://retailo:secret@redis.example.com:6380/2",
             **overrides,
         }
@@ -47,6 +48,19 @@ class ProductionSettingsTests(TestCase):
     def test_production_requires_a_shared_redis_cache(self):
         with self.assertRaisesRegex(RuntimeError, "REDIS_URL"):
             self.load_production_settings(REDIS_URL="")
+
+    def test_production_requires_explicit_csrf_trusted_origins(self):
+        with self.assertRaisesRegex(RuntimeError, "DJANGO_CSRF_TRUSTED_ORIGINS"):
+            self.load_production_settings(DJANGO_CSRF_TRUSTED_ORIGINS="")
+
+    def test_production_parses_csrf_trusted_origins(self):
+        production = self.load_production_settings(
+            DJANGO_CSRF_TRUSTED_ORIGINS=" https://retailo.example.com/ , https://pos.example.com "
+        )
+        self.assertEqual(
+            production.CSRF_TRUSTED_ORIGINS,
+            ["https://retailo.example.com", "https://pos.example.com"],
+        )
 
     def test_production_uses_redis_for_throttle_counters(self):
         production = self.load_production_settings()
