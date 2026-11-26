@@ -6,11 +6,17 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: Express
-      MSSQL_SA_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD in the protected production .env}
+      MSSQL_SA_PASSWORD: ${SA_PASSWORD:?Set the SQL Server administrator password in .env.prod}
+      RETAILO_DATABASE_NAME: ${DATABASE_NAME:-Retailo}
+      RETAILO_APP_LOGIN: ${APP_DATABASE_USER:?Set APP_DATABASE_USER in .env.prod}
+      RETAILO_APP_PASSWORD: ${APP_DATABASE_PASSWORD:?Set APP_DATABASE_PASSWORD in .env.prod}
+      RETAILO_MIGRATION_LOGIN: ${MIGRATION_DATABASE_USER:?Set MIGRATION_DATABASE_USER in .env.prod}
+      RETAILO_MIGRATION_PASSWORD: ${MIGRATION_DATABASE_PASSWORD:?Set MIGRATION_DATABASE_PASSWORD in .env.prod}
       MSSQL_MEMORY_LIMIT_MB: ${SQLSERVER_MEMORY_LIMIT_MB:-2048}
     volumes:
       - retailo_sqlserver_data:/var/opt/mssql
       - ./var/backups/sqlserver:/var/opt/mssql/backup
+      - ./scripts/sql/bootstrap-logins.sql:/opt/retailo-sql/bootstrap-logins.sql:ro
     networks:
       - data
     restart: unless-stopped
@@ -72,8 +78,8 @@ services:
       DATABASE_HOST: db
       DATABASE_PORT: "1433"
       DATABASE_NAME: ${DATABASE_NAME:-Retailo}
-      DATABASE_USER: sa
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD}
+      DATABASE_USER: ${APP_DATABASE_USER:?Set APP_DATABASE_USER in .env.prod}
+      DATABASE_PASSWORD: ${APP_DATABASE_PASSWORD:?Set APP_DATABASE_PASSWORD in .env.prod}
       REDIS_URL: redis://redis:6379/0
       TRUSTED_PROXY_COUNT: "1"
       TRUST_PROXY_SSL_HEADER: "true"
