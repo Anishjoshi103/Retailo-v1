@@ -146,10 +146,18 @@ sudo docker compose --env-file .env.prod -f docker-compose.prod.yml config --qui
 
 4. Confirm SQL Server, Redis, API, and Caddy health checks pass.
 5. Complete the first backup and verify the external and encrypted offsite copies.
-6. Run the initial schema migration separately:
+6. Provision the database and separate logins once, after SQL Server is healthy:
 
    ```sh
-   sudo docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T api python manage.py migrate --noinput
+   sudo bash scripts/self-hosted/bootstrap-db-users.sh
+   ```
+
+   This creates the database if absent, a runtime login limited to data read/write and stored-procedure execution, and a separate migration login for schema changes. It is safe to rerun.
+
+7. Run migrations as a one-off task using the migration login; the long-running API continues to use only the restricted runtime login:
+
+   ```sh
+   sudo bash scripts/self-hosted/migrate.sh
    ```
 
 8. Verify `https://retailo.lan/api/v1/ready` from a managed POS device.
