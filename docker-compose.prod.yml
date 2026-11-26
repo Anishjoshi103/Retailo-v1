@@ -49,10 +49,25 @@ services:
 
   api:
     image: ${API_IMAGE:?Set API_IMAGE to the published Retailo API image pinned by sha256 digest}
-    env_file:
-      - .env.prod
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.production
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env.prod}
+      DJANGO_DEBUG: "false"
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?Set DJANGO_ALLOWED_HOSTS in .env.prod}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:?Set DJANGO_CSRF_TRUSTED_ORIGINS in .env.prod}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
+      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
+      EMAIL_HOST: ${EMAIL_HOST:-localhost}
+      EMAIL_PORT: ${EMAIL_PORT:-25}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-false}
+      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-false}
+      EMAIL_TIMEOUT: ${EMAIL_TIMEOUT:-10}
+      AUTH_REFRESH_COOKIE_SAMESITE: ${AUTH_REFRESH_COOKIE_SAMESITE:-Lax}
+      THROTTLE_CACHE_KEY_PREFIX: ${THROTTLE_CACHE_KEY_PREFIX:-retailo:throttle}
       DATABASE_ENGINE: mssql
       DATABASE_HOST: db
       DATABASE_PORT: "1433"
