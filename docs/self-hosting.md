@@ -112,7 +112,9 @@ Set at least:
 - `DJANGO_CSRF_TRUSTED_ORIGINS=https://retailo.lan`: full HTTPS origin.
 - `RETAILO_HOSTNAME=retailo.lan`.
 - `LAN_BIND_IP`: the server's actual fixed LAN IPv4 address.
-- `SA_PASSWORD`: SQL Server administrator password, used only by the SQL Server container and admin-only backup/bootstrap operations.\n- `APP_DATABASE_USER` / `APP_DATABASE_PASSWORD`: restricted Django runtime login.\n- `MIGRATION_DATABASE_USER` / `MIGRATION_DATABASE_PASSWORD`: separate elevated login used only by the one-off migration task.
+- `SA_PASSWORD`: SQL Server administrator password, used only by the SQL Server container and admin-only backup/bootstrap operations.
+- `APP_DATABASE_USER` / `APP_DATABASE_PASSWORD`: restricted Django runtime login.
+- `MIGRATION_DATABASE_USER` / `MIGRATION_DATABASE_PASSWORD`: separate elevated login used only by the one-off migration task.
 - Four image references with full immutable digests: `API_IMAGE`, `SQLSERVER_IMAGE`, `REDIS_IMAGE`, and `CADDY_IMAGE`.
 
 The API image is published by the existing CI release workflow to GHCR. Resolve its digest from the release's commit-SHA tag. Resolve the SQL Server, Redis, and Caddy digests deliberately from the image versions you have reviewed:
