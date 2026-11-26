@@ -48,10 +48,14 @@ IF DATABASE_PRINCIPAL_ID(N' + QUOTENAME(@MigrationLogin, N'''') + N') IS NULL
     CREATE USER ' + QUOTENAME(@MigrationLogin) + N' FOR LOGIN ' + QUOTENAME(@MigrationLogin) + N';
 IF DATABASE_PRINCIPAL_ID(N''retailo_runtime_executor'') IS NULL
     CREATE ROLE [retailo_runtime_executor];
-ALTER ROLE [db_datareader] ADD MEMBER ' + QUOTENAME(@AppLogin) + N';
-ALTER ROLE [db_datawriter] ADD MEMBER ' + QUOTENAME(@AppLogin) + N';
-ALTER ROLE [retailo_runtime_executor] ADD MEMBER ' + QUOTENAME(@AppLogin) + N';
+IF NOT EXISTS (SELECT 1 FROM sys.database_role_members WHERE role_principal_id = DATABASE_PRINCIPAL_ID(N''db_datareader'') AND member_principal_id = DATABASE_PRINCIPAL_ID(N' + QUOTENAME(@AppLogin, N'''') + N'))
+    ALTER ROLE [db_datareader] ADD MEMBER ' + QUOTENAME(@AppLogin) + N';
+IF NOT EXISTS (SELECT 1 FROM sys.database_role_members WHERE role_principal_id = DATABASE_PRINCIPAL_ID(N''db_datawriter'') AND member_principal_id = DATABASE_PRINCIPAL_ID(N' + QUOTENAME(@AppLogin, N'''') + N'))
+    ALTER ROLE [db_datawriter] ADD MEMBER ' + QUOTENAME(@AppLogin) + N';
+IF NOT EXISTS (SELECT 1 FROM sys.database_role_members WHERE role_principal_id = DATABASE_PRINCIPAL_ID(N''retailo_runtime_executor'') AND member_principal_id = DATABASE_PRINCIPAL_ID(N' + QUOTENAME(@AppLogin, N'''') + N'))
+    ALTER ROLE [retailo_runtime_executor] ADD MEMBER ' + QUOTENAME(@AppLogin) + N';
 GRANT EXECUTE ON SCHEMA::[dbo] TO [retailo_runtime_executor];
-ALTER ROLE [db_owner] ADD MEMBER ' + QUOTENAME(@MigrationLogin) + N';';
+IF NOT EXISTS (SELECT 1 FROM sys.database_role_members WHERE role_principal_id = DATABASE_PRINCIPAL_ID(N''db_owner'') AND member_principal_id = DATABASE_PRINCIPAL_ID(N' + QUOTENAME(@MigrationLogin, N'''') + N'))
+    ALTER ROLE [db_owner] ADD MEMBER ' + QUOTENAME(@MigrationLogin) + N';';
 EXEC (@Sql);
 PRINT N'Retailo SQL logins configured.';
