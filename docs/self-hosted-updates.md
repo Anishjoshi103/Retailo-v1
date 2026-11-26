@@ -36,7 +36,7 @@ The script performs these stages in order:
 1. Creates a full SQL backup, verifies it, and confirms the external-drive and encrypted offsite copies.
 2. Saves the currently deployed API digest in memory and updates only `API_IMAGE` in the protected `.env.prod`.
 3. Validates Compose configuration and pulls all pinned images.
-4. Runs `manage.py migrate --noinput` in a one-off API container as a separate migration task.
+4. Runs `manage.py migrate --noinput` in a one-off API container using the dedicated migration login; the long-running API container retains its restricted runtime login.
 5. Recreates the API container and checks both Django readiness (SQL Server + Redis) and the reverse proxy health endpoint.
 
 A lock prevents concurrent updates. The script does not print or read secrets from `.env.prod` into logs.
