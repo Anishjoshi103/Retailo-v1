@@ -6,7 +6,7 @@ This stack is for a dedicated store server. It uses the same published Retailo A
 
 - **Caddy** terminates HTTPS using its internal CA. Only its HTTPS port is published, bound to the explicitly configured LAN IPv4 address.
 - **API** runs the existing Gunicorn image as the non-root image user. The root filesystem is read-only, Linux capabilities are dropped, and only a small temporary filesystem is writable.
-- **SQL Server Express 2022** stores the production database on a persistent named volume. No SQL port is published to the LAN.
+- **SQL Server Express 2022** stores the production database on a persistent named volume. No SQL port is published to the LAN. Bootstrap creates separate SQL identities: the API receives data-reader/data-writer plus stored-procedure execution rights; migrations use a separate elevated login only in a one-off container.
 - **Redis** provides the shared Django throttle cache required by production settings. It is private to the data network and persists its small AOF state.
 
 All services restart with `unless-stopped`, have health checks, and declare CPU/memory limits. Compose's `deploy.resources.limits` is honored by current Docker Compose implementations; verify limits with `docker inspect` on the target host before relying on them.
@@ -46,10 +46,16 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml ps
 ```
 
 6. Trust Caddy's local root CA on each managed POS device before using the site. Caddy stores its CA under the persistent `retailo_caddy_data` volume. Export the root certificate through an administrator-controlled process and install it in the device's trusted root store. Never distribute the CA private key. Details and remote access options will be in the network/access section of the self-hosting guide.
-7. Run the initial database migration as a separately approved step after the backup procedure is installed:
+7. Provision the database and separate logins once after SQL Server is healthy:
 
 ```sh
-docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T api python manage.py migrate --noinput
+sudo bash scripts/self-hosted/bootstrap-db-users.sh
+```
+
+8. Run schema migrations as a separate one-off task using the migration login:
+
+```sh
+sudo bash scripts/self-hosted/migrate.sh
 ```
 
 Check `https://retailo.lan/api/v1/ready` from a trusted LAN client. A healthy liveness endpoint alone is not sufficient.

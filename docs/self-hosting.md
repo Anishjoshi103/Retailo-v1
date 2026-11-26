@@ -103,7 +103,7 @@ sudo chmod 600 .env.prod
 sudoedit .env.prod
 ```
 
-Generate unique secrets locally. For example, use `openssl rand -base64 48` for the Django secret and a separate strong SQL Server password. Enter them directly into the local protected file; **never paste credentials into chat, tickets, Git, or shell command arguments**.
+Generate secrets locally and enter them directly into `.env.prod`; never paste credentials into chat, tickets, Git, or shell command arguments. Use `openssl rand -base64 48` for `DJANGO_SECRET_KEY` and `openssl rand -hex 32` separately for `SA_PASSWORD`, `APP_DATABASE_PASSWORD`, and `MIGRATION_DATABASE_PASSWORD`. Hex passwords avoid quoting issues in the SQLCMD bootstrap script. Keep `.env.prod` mode `0600`.
 
 Set at least:
 
@@ -112,7 +112,9 @@ Set at least:
 - `DJANGO_CSRF_TRUSTED_ORIGINS=https://retailo.lan`: full HTTPS origin.
 - `RETAILO_HOSTNAME=retailo.lan`.
 - `LAN_BIND_IP`: the server's actual fixed LAN IPv4 address.
-- `DATABASE_PASSWORD`: strong SQL Server SA password.
+- `SA_PASSWORD`: SQL Server administrator password, used only by the SQL Server container and admin-only backup/bootstrap operations.
+- `APP_DATABASE_USER` / `APP_DATABASE_PASSWORD`: restricted Django runtime login.
+- `MIGRATION_DATABASE_USER` / `MIGRATION_DATABASE_PASSWORD`: separate elevated login used only by the one-off migration task.
 - Four image references with full immutable digests: `API_IMAGE`, `SQLSERVER_IMAGE`, `REDIS_IMAGE`, and `CADDY_IMAGE`.
 
 The API image is published by the existing CI release workflow to GHCR. Resolve its digest from the release's commit-SHA tag. Resolve the SQL Server, Redis, and Caddy digests deliberately from the image versions you have reviewed:
@@ -146,14 +148,22 @@ sudo docker compose --env-file .env.prod -f docker-compose.prod.yml config --qui
 
 4. Confirm SQL Server, Redis, API, and Caddy health checks pass.
 5. Complete the first backup and verify the external and encrypted offsite copies.
-6. Run the initial schema migration separately:
+6. Provision the database and separate logins once, after SQL Server is healthy:
 
    ```sh
-   sudo docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T api python manage.py migrate --noinput
+   sudo bash scripts/self-hosted/bootstrap-db-users.sh
    ```
 
-7. Verify `https://retailo.lan/api/v1/ready` from a managed POS device.
-8. Complete a controlled pilot smoke test: sign in, select the correct store/branch, search a product, inspect stock, and perform only approved test transactions. Reconcile the resulting records before live trading.
+   This creates the database if absent, a runtime login limited to data read/write and stored-procedure execution, and a separate migration login for schema changes. It is safe to rerun.
+
+7. Run migrations as a one-off task using the migration login; the long-running API continues to use only the restricted runtime login:
+
+   ```sh
+   sudo bash scripts/self-hosted/migrate.sh
+   ```
+
+8. Verify `https://retailo.lan/api/v1/ready` from a managed POS device.
+9. Complete a controlled pilot smoke test: sign in, select the correct store/branch, search a product, inspect stock, and perform only approved test transactions. Reconcile the resulting records before live trading.
 
 Do not open SQL Server, Redis, or Gunicorn ports to the LAN. Do not configure router port forwarding. Remote support is optional and must follow the Tailscale procedure in [network access](self-hosted-network-access.md).
 
