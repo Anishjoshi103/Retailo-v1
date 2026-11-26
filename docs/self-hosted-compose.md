@@ -6,7 +6,7 @@ This stack is for a dedicated store server. It uses the same published Retailo A
 
 - **Caddy** terminates HTTPS using its internal CA. Only its HTTPS port is published, bound to the explicitly configured LAN IPv4 address.
 - **API** runs the existing Gunicorn image as the non-root image user. The root filesystem is read-only, Linux capabilities are dropped, and only a small temporary filesystem is writable.
-- **SQL Server Express 2022** stores the production database on a persistent named volume. No SQL port is published to the LAN.
+- **SQL Server Express 2022** stores the production database on a persistent named volume. No SQL port is published to the LAN. Bootstrap creates separate SQL identities: the API receives data-reader/data-writer plus stored-procedure execution rights; migrations use a separate elevated login only in a one-off container.
 - **Redis** provides the shared Django throttle cache required by production settings. It is private to the data network and persists its small AOF state.
 
 All services restart with `unless-stopped`, have health checks, and declare CPU/memory limits. Compose's `deploy.resources.limits` is honored by current Docker Compose implementations; verify limits with `docker inspect` on the target host before relying on them.
