@@ -10,6 +10,7 @@ services:
       MSSQL_MEMORY_LIMIT_MB: ${SQLSERVER_MEMORY_LIMIT_MB:-2048}
     volumes:
       - retailo_sqlserver_data:/var/opt/mssql
+      - ./var/backups/sqlserver:/var/opt/mssql/backup
     networks:
       - data
     restart: unless-stopped
@@ -100,6 +101,7 @@ services:
       RETAILO_HOSTNAME: ${RETAILO_HOSTNAME:-retailo.lan}
     ports:
       - "${LAN_BIND_IP:?Set LAN_BIND_IP to the store server's LAN IPv4 address}:443:443"
+      - "127.0.0.1:8080:8080"
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - retailo_caddy_data:/data
