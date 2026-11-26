@@ -108,7 +108,7 @@ A backup is not proven recoverable until SQL Server restores it. The script rest
 Copy the chosen backup into `var/backups/sqlserver` if it is currently only on the external drive. Then run during a quiet period with sufficient free disk space:
 
 ```sh
-sudo bash scripts/self-hosted/restore-proof.sh Retailo_full_YYYYMMDDTHHMMSSZ.bak
+sudo scripts/self-hosted/restore-proof.sh Retailo_full_YYYYMMDDTHHMMSSZ.bak
 ```
 
 The script uses the SQL Server instance's data volume for temporary restored files. It requires additional free space approximately equal to the restored database size. A failed restore or consistency check exits non-zero and leaves the temporary database for investigation; do not delete it until the failure has been reviewed.
