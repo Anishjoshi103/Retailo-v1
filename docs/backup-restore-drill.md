@@ -74,7 +74,7 @@ The rclone crypt password is held by rclone's protected configuration, not this 
 From the deployment checkout:
 
 ```sh
-sudo EXTERNAL_BACKUP_DIR=/mnt/retailo-backup RCLONE_REMOTE=retailo-offsite:store-001 scripts/self-hosted/backup.sh
+sudo env EXTERNAL_BACKUP_DIR=/mnt/retailo-backup RCLONE_REMOTE=retailo-offsite:store-001 bash scripts/self-hosted/backup.sh
 ```
 
 For routine operation, use the protected `/etc/retailo/backup.env` through systemd below. Check that the output lists all three copies and ends with `BACKUP_OK`. Confirm the file exists on the external drive and the encrypted remote.
@@ -108,7 +108,7 @@ A backup is not proven recoverable until SQL Server restores it. The script rest
 Copy the chosen backup into `var/backups/sqlserver` if it is currently only on the external drive. Then run during a quiet period with sufficient free disk space:
 
 ```sh
-sudo scripts/self-hosted/restore-proof.sh Retailo_full_YYYYMMDDTHHMMSSZ.bak
+sudo bash scripts/self-hosted/restore-proof.sh Retailo_full_YYYYMMDDTHHMMSSZ.bak
 ```
 
 The script uses the SQL Server instance's data volume for temporary restored files. It requires additional free space approximately equal to the restored database size. A failed restore or consistency check exits non-zero and leaves the temporary database for investigation; do not delete it until the failure has been reviewed.
