@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 umask 077
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
-COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
-ENV_FILE="${ENV_FILE:-.env.prod}"
-fail() { printf 'ERROR: %s\\n' "$*" >&2; exit 1; }
+COMPOSE_FILE="\${COMPOSE_FILE:-docker-compose.prod.yml}"
+ENV_FILE="\${ENV_FILE:-.env.prod}"
+fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 [[ -f "$ENV_FILE" ]] || fail "Missing $ENV_FILE"
-TEMP_ENV="$(mktemp "${TMPDIR:-/tmp}/retailo-migrate.XXXXXX")"
+TEMP_ENV="$(mktemp "\${TMPDIR:-/tmp}/retailo-migrate.XXXXXX")"
 chmod 0600 "$TEMP_ENV"
 trap 'rm -f "$TEMP_ENV"' EXIT
 python3 - "$ENV_FILE" "$TEMP_ENV" <<'PY'
@@ -41,6 +41,6 @@ for line in lines:
     output.append(line)
 if seen != set(replacements):
     raise SystemExit("Expected APP_DATABASE_USER and APP_DATABASE_PASSWORD in .env.prod")
-destination.write_text("\\n".join(output) + "\\n", encoding="utf-8")
+destination.write_text("\n".join(output) + "\n", encoding="utf-8")
 PY
 docker compose --env-file "$TEMP_ENV" -f "$COMPOSE_FILE" run --rm --no-deps api python manage.py migrate --noinput
