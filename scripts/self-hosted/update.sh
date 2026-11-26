@@ -101,7 +101,7 @@ printf 'Step 3/5: pull the pinned release images.\n'
 compose pull
 
 printf 'Step 4/5: run database migrations as a one-off release task.\n'
-compose run --rm --no-deps api python manage.py migrate --noinput
+bash "$ROOT_DIR/scripts/self-hosted/migrate.sh"
 
 printf 'Step 5/5: activate the new API image and verify API readiness and proxy health.\n'
 compose up -d --no-deps api
