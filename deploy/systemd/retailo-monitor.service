@@ -1,0 +1,12 @@
+[Unit]
+Description=Retailo store server disk and SQL capacity monitor
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/retailo
+EnvironmentFile=-/etc/retailo/backup.env
+ExecStart=/usr/bin/bash /opt/retailo/scripts/self-hosted/monitor.sh
+UMask=0077
