@@ -13,6 +13,7 @@ SQL_FILE="$ROOT_DIR/scripts/sql/restore-proof.sql"
 
 fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 [[ -n "$BACKUP_FILE" ]] || fail "Usage: $0 <backup-file-name-or-path>"
+[[ "$RESTORE_DB" =~ ^[A-Za-z][A-Za-z0-9_]{0,127}$ ]] || fail "RESTORE_DB must be a simple SQL identifier (letters, digits, underscore; max 128 characters)"
 [[ -f "$ENV_FILE" ]] || fail "Missing $ENV_FILE"
 [[ -f "$SQL_FILE" ]] || fail "Missing restore SQL script"
 
