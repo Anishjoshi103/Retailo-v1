@@ -46,10 +46,16 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml ps
 ```
 
 6. Trust Caddy's local root CA on each managed POS device before using the site. Caddy stores its CA under the persistent `retailo_caddy_data` volume. Export the root certificate through an administrator-controlled process and install it in the device's trusted root store. Never distribute the CA private key. Details and remote access options will be in the network/access section of the self-hosting guide.
-7. Run the initial database migration as a separately approved step after the backup procedure is installed:
+7. Provision the database and separate logins once after SQL Server is healthy:
 
 ```sh
-docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T api python manage.py migrate --noinput
+sudo bash scripts/self-hosted/bootstrap-db-users.sh
+```
+
+8. Run schema migrations as a separate one-off task using the migration login:
+
+```sh
+sudo bash scripts/self-hosted/migrate.sh
 ```
 
 Check `https://retailo.lan/api/v1/ready` from a trusted LAN client. A healthy liveness endpoint alone is not sufficient.
