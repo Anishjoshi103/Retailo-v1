@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Retailo database and disk capacity every 15 minutes
+
+[Timer]
+OnBootSec=5m
+OnUnitActiveSec=15m
+Persistent=true
+Unit=retailo-monitor.service
+
+[Install]
+WantedBy=timers.target

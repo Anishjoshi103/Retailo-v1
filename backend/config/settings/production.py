@@ -16,6 +16,14 @@ ALLOWED_HOSTS = [
 if not ALLOWED_HOSTS:
     raise RuntimeError("DJANGO_ALLOWED_HOSTS must be configured in production.")
 
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip().rstrip("/")
+    for origin in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+if not CSRF_TRUSTED_ORIGINS:
+    raise RuntimeError("DJANGO_CSRF_TRUSTED_ORIGINS must be configured in production.")
+
 # Production throttling must use a shared service: file and in-memory caches are
 # local to a container and allow limits to be bypassed across replicas.
 REDIS_URL = os.environ.get("REDIS_URL", "").strip()
